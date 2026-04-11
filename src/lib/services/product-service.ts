@@ -151,7 +151,7 @@ export const productService = {
     return this.getById(parent.id);
   },
 
-  async update(id: string, updates: Partial<Product>): Promise<Product | null> {
+   async update(id: string, updates: Partial<Product>): Promise<Product | null> {
     // Current simple implementation: updates parent only. 
     // Variable product editing will be handled by a specialized management UI.
     const { data, error } = await supabase

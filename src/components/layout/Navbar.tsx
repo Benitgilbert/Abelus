@@ -111,7 +111,7 @@ export function Navbar() {
                          </div>
                          <div className="flex-1 overflow-hidden">
                             <p className="truncate text-[#1A1C1E]">{p.name}</p>
-                            <p className="text-[10px] text-muted-foreground uppercase">{p.retail_price.toLocaleString()} RWF</p>
+                            <p className="text-[10px] text-muted-foreground uppercase">{(p.retail_price ?? 0).toLocaleString()} RWF</p>
                          </div>
                       </button>
                     ))}

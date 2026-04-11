@@ -88,13 +88,13 @@ export default function CartPage() {
 
                         {/* Product Info */}
                         <div className="flex-1 text-center sm:text-left">
-                            <h3 className="text-2xl font-black font-outfit text-[#1A1C1E] tracking-tight">{item.name}</h3>
-                            <p className="mt-2 text-sm text-muted-foreground font-medium line-clamp-1">{item.description || "High-quality retail product."}</p>
+                            <h3 className="text-2xl font-black font-outfit text-[#1A1C1E] tracking-tight">{item.product.name}</h3>
+                            <p className="mt-2 text-sm text-muted-foreground font-medium line-clamp-1">{item.product.description || "High-quality retail product."}</p>
                             
                             <div className="mt-6 flex flex-wrap items-center justify-center sm:justify-start gap-8">
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Unit Price</p>
-                                    <p className="text-lg font-black text-primary">{Number(item.retail_price).toLocaleString()} RWF</p>
+                                    <p className="text-lg font-black text-primary">{Number(item.price).toLocaleString()} RWF</p>
                                 </div>
                                 <div className="h-8 w-px bg-muted" />
                                 <div className="space-y-3">
@@ -122,7 +122,7 @@ export default function CartPage() {
                         <div className="flex flex-col items-center sm:items-end gap-6 sm:pl-8 sm:border-l">
                             <div className="text-right">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Subtotal</p>
-                                <p className="text-2xl font-black text-[#1A1C1E]">{(item.retail_price * item.quantity).toLocaleString()} <span className="text-xs">RWF</span></p>
+                                <p className="text-2xl font-black text-[#1A1C1E]">{(item.price * item.quantity).toLocaleString()} <span className="text-xs">RWF</span></p>
                             </div>
                             <button 
                               onClick={() => removeItem(item.id)}

@@ -120,7 +120,10 @@ export default function InventoryPage() {
 
       let res;
       if (editingProductId) {
-        res = await productService.update(editingProductId, payload);
+        // Strip variants for update as the service currently only updates parent fields
+        // and to avoid type mismatch with variants missing IDs
+        const { variants: _v, ...updates } = payload;
+        res = await productService.update(editingProductId, updates as Partial<Product>);
       } else {
         res = await productService.create(payload);
       }
