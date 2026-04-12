@@ -38,6 +38,12 @@ export default function ProductDetailPage() {
       setLoading(true);
       const data = await productService.getById(id as string);
       if (data) {
+        // Redirection Logic: If this is a printing service, send to portal
+        if (data.is_service && data.name.toLowerCase().includes('printing')) {
+          router.replace('/print-portal');
+          return;
+        }
+
         setProduct(data);
         const defaultV = data.variants?.find(v => v.is_default) || data.variants?.[0];
         if (defaultV) setSelectedVariant(defaultV);
@@ -45,7 +51,7 @@ export default function ProductDetailPage() {
       setLoading(false);
     }
     fetchProduct();
-  }, [id]);
+  }, [id, router]);
 
   const handleAddToCart = () => {
     if (!product || !selectedVariant) return;
@@ -252,8 +258,13 @@ export default function ProductDetailPage() {
                         <CheckCircle2 className="h-6 w-6 animate-bounce" />
                         Added to Ledger
                       </>
-                    ) : displayStock <= 0 ? (
+                    ) : (displayStock <= 0 && !product.is_service) ? (
                       "Registry Depleted (Out of Stock)"
+                    ) : product.is_service && product.name.toLowerCase().includes('printing') ? (
+                      <>
+                        <Zap className="h-6 w-6" />
+                        Open Print Portal
+                      </>
                     ) : (
                       <>
                         <ShoppingCart className="h-6 w-6" />

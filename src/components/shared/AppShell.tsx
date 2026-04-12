@@ -21,7 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
         
-        <div className="p-8">
+        <div className="h-[calc(100vh-64px)] p-4 lg:p-6 overflow-hidden">
           {children}
         </div>
       </main>

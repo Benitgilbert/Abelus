@@ -24,7 +24,7 @@ const navigation = [
   { name: 'Dashboard', href: '/management', icon: BarChart3 },
   { name: 'Retail POS', href: '/pos', icon: ShoppingCart },
   { name: 'Inventory', href: '/inventory', icon: Package },
-  { name: 'Market Clients', href: '/market', icon: Users },
+  { name: 'Client Abonné', href: '/market', icon: Users },
   { name: 'Print Center', href: '/admin/print-orders', icon: Printer },
   { name: 'Financials', href: '/financials', icon: CreditCard },
   { name: 'Admin Control', href: '/admin/settings', icon: ShieldCheck },
@@ -33,6 +33,11 @@ const navigation = [
 export function Sidebar() {
   const { profile, signOut } = useAuth();
   const pathname = usePathname();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filteredNavigation = navigation.filter(item => {
     if (profile?.role === 'staff') {
@@ -40,6 +45,15 @@ export function Sidebar() {
     }
     return true;
   });
+
+  if (!mounted) {
+    return (
+      <div className="flex h-full w-64 flex-col border-r bg-card/50 backdrop-blur-xl animate-pulse">
+        <div className="flex h-20 items-center px-6" />
+        <div className="flex-1 space-y-4 px-6 py-8" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card/50 backdrop-blur-xl transition-all">

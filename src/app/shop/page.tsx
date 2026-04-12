@@ -17,7 +17,8 @@ import {
   Tag,
   X,
   Package,
-  Layers
+  Layers,
+  Zap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCart } from '@/components/providers/CartProvider';
@@ -208,7 +209,10 @@ export default function ShopPage() {
                            )}
                         </Link>
                         
-                        <Link href={`/shop/${product.id}`} className="block flex-1 px-1 group-hover:text-indigo-600 transition-colors">
+                        <Link 
+                          href={product.is_service && product.name.toLowerCase().includes('printing') ? '/print-portal' : `/shop/${product.id}`} 
+                          className="block flex-1 px-1 group-hover:text-indigo-600 transition-colors"
+                        >
                           <h3 className="font-outfit text-2xl font-black text-slate-900 line-clamp-2 leading-tight tracking-tight">{product.name}</h3>
                         </Link>
                           
@@ -252,10 +256,20 @@ export default function ShopPage() {
                             </span>
                           </div>
                           <button 
-                            onClick={() => handleAddToCart(product)}
+                            onClick={() => {
+                              if (product.is_service && product.name.toLowerCase().includes('printing')) {
+                                window.location.href = '/print-portal';
+                              } else {
+                                handleAddToCart(product);
+                              }
+                            }}
                             className="group h-16 w-16 relative flex items-center justify-center rounded-[1.8rem] bg-indigo-600 text-white shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-105 active:scale-95 transition-all overflow-hidden"
                           >
-                            <ShoppingCart className="h-6 w-6 relative z-10 transition-transform group-hover:rotate-12" />
+                            {product.is_service && product.name.toLowerCase().includes('printing') ? (
+                              <Zap className="h-6 w-6 relative z-10 transition-transform group-hover:rotate-12" />
+                            ) : (
+                              <ShoppingCart className="h-6 w-6 relative z-10 transition-transform group-hover:rotate-12" />
+                            )}
                             <div className="absolute inset-0 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                           </button>
                         </div>

@@ -17,7 +17,10 @@ import {
   Palette,
   Edit2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  Tag,
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -31,18 +34,21 @@ export default function PrintPortal() {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   
-  // Dynamic Pricing Data
-  const [services, setServices] = useState<{
-    black: Product | null,
-    color: Product | null,
-    editing: Product | null
-  }>({ black: null, color: null, editing: null });
+  // Dynamic Pricing Data (Pulled from Inventory Variations)
+  const [prices, setPrices] = useState({
+    black: 30,
+    color: 50,
+    editing: 500,
+    binding: 1000
+  });
 
   // Order State
   const [pageCount, setPageCount] = useState(1);
   const [copies, setCopies] = useState(1);
-  const [selectedPrintType, setSelectedPrintType] = useState<'black' | 'color'>('black');
+  const [selectedPrintType, setSelectedPrintType] = useState<'black' | 'color' | 'mixed'>('black');
+  const [paperSize, setPaperSize] = useState<'A4' | 'A5' | 'A3'>('A4');
   const [addEditing, setAddEditing] = useState(false);
+  const [addBinding, setAddBinding] = useState(false);
   const [momoPhone, setMomoPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -54,20 +60,30 @@ export default function PrintPortal() {
     async function loadPrices() {
       const allProducts = await productService.getAll();
       if (allProducts) {
-        setServices({
-          black: allProducts.find(p => 
-            p.name.toLowerCase().includes('black') || 
-            p.name.toLowerCase().includes('b&w') ||
-            p.name.toLowerCase().includes('b/w')
-          ) || null,
-          color: allProducts.find(p => 
-            p.name.toLowerCase().includes('color') && !p.name.toLowerCase().includes('black')
-          ) || null,
-          editing: allProducts.find(p => 
-            p.name.toLowerCase().includes('edit') || 
-            p.name.toLowerCase().includes('format')
-          ) || null
-        });
+        // Find the "Master" printing service product
+        const masterProduct = allProducts.find(p => 
+          p.is_service && p.name.toLowerCase().includes('printing')
+        );
+
+        if (masterProduct && masterProduct.variants) {
+          // Extract prices from variants based on attributes
+          const findVariantPrice = (search: string) => {
+            const v = masterProduct.variants?.find(vx => 
+              Object.values(vx.attributes).some(attr => 
+                attr.toLowerCase().includes(search.toLowerCase())
+              )
+            );
+            return v ? Number(v.selling_price) : null;
+          };
+
+          // Update the portal's internal price state
+          setPrices({
+            black: findVariantPrice('black') || findVariantPrice('b&w') || 30,
+            color: findVariantPrice('color') || 50,
+            editing: findVariantPrice('editing') || findVariantPrice('format') || findVariantPrice('edit') || 500,
+            binding: findVariantPrice('binding') || findVariantPrice('cover') || 1000
+          });
+        }
       }
     }
     loadPrices();
@@ -107,12 +123,17 @@ export default function PrintPortal() {
           file_url: uploadData.path,
           original_filename: file.name,
           page_count: pageCount,
+          bw_pages: selectedPrintType === 'black' ? pageCount : selectedPrintType === 'mixed' ? Math.floor(pageCount * 0.8) : 0,
+          color_pages: selectedPrintType === 'color' ? pageCount : selectedPrintType === 'mixed' ? Math.ceil(pageCount * 0.2) : 0,
+          paper_size: paperSize,
           total_price: totalPrice,
           status: 'pending',
           settings_json: {
             printType: selectedPrintType,
+            paperSize,
             copies,
             editing: addEditing,
+            binding: addBinding,
             timestamp: new Date().toISOString()
           }
         })
@@ -175,16 +196,25 @@ export default function PrintPortal() {
 
   // 3. Calculate Total
   const getUnitPrice = () => {
-    const printProduct = selectedPrintType === 'black' ? services.black : services.color;
-    return Number(printProduct?.retail_price || 0);
+    if (selectedPrintType === 'mixed') return (prices.black + prices.color) / 1.8; // Average with discount
+    return selectedPrintType === 'black' ? prices.black : prices.color;
+  };
+
+  const getSizeMultiplier = () => {
+    if (paperSize === 'A5') return 0.7; // 30% discount for A5
+    if (paperSize === 'A3') return 2.0; // Double for A3
+    return 1.0;
   };
 
   const getEditingFee = () => {
-    if (!addEditing) return 0;
-    return Number(services.editing?.retail_price || 0);
+    return addEditing ? prices.editing : 0;
   };
 
-  const totalPrice = (getUnitPrice() * pageCount * copies) + getEditingFee();
+  const getBindingFee = () => {
+    return addBinding ? prices.binding : 0;
+  };
+
+  const totalPrice = Math.round((getUnitPrice() * pageCount * copies * getSizeMultiplier()) + getEditingFee() + getBindingFee());
 
   return (
     <PublicShell>
@@ -315,7 +345,7 @@ export default function PrintPortal() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                       <button 
                         onClick={() => setSelectedPrintType('black')}
                         className={cn(
@@ -330,11 +360,11 @@ export default function PrintPortal() {
                            <Layers className="h-7 w-7" />
                          </div>
                          <h4 className="font-bold text-lg">Standard B&W</h4>
-                         <p className="text-sm text-muted-foreground mt-2 font-medium">Economy printing for reports and forms.</p>
-                         <div className="mt-6 font-black text-primary uppercase tracking-widest text-xs">
-                           {(services.black?.retail_price ?? 0).toLocaleString()} RWF / Page
+                         <p className="text-xs text-muted-foreground mt-2 font-medium">Economy printing for reports and forms.</p>
+                         <div className="mt-6 font-black text-primary uppercase tracking-widest text-[10px]">
+                           {prices.black.toLocaleString()} RWF / Page
                          </div>
-                         {selectedPrintType === 'black' && <div className="absolute top-6 right-6 h-6 w-6 rounded-full bg-primary flex items-center justify-center text-white scale-110 shadow-lg"><ArrowRight className="h-3 w-3" /></div>}
+                         {selectedPrintType === 'black' && <div className="absolute top-6 right-6 h-6 w-6 rounded-full bg-primary flex items-center justify-center text-white scale-110 shadow-lg font-bold">✓</div>}
                       </button>
 
                       <button 
@@ -351,41 +381,108 @@ export default function PrintPortal() {
                            <Palette className="h-7 w-7" />
                          </div>
                          <h4 className="font-bold text-lg">High-End Color</h4>
-                         <p className="text-sm text-muted-foreground mt-2 font-medium">Vibrant pigmentation for photos and posters.</p>
-                         <div className="mt-6 font-black text-primary uppercase tracking-widest text-xs">
-                           {(services.color?.retail_price ?? 0).toLocaleString()} RWF / Page
+                         <p className="text-xs text-muted-foreground mt-2 font-medium">Vibrant pigmentation for photos and posters.</p>
+                         <div className="mt-6 font-black text-primary uppercase tracking-widest text-[10px]">
+                           {prices.color.toLocaleString()} RWF / Page
                          </div>
-                         {selectedPrintType === 'color' && <div className="absolute top-6 right-6 h-6 w-6 rounded-full bg-primary flex items-center justify-center text-white scale-110 shadow-lg"><ArrowRight className="h-3 w-3" /></div>}
+                         {selectedPrintType === 'color' && <div className="absolute top-6 right-6 h-6 w-6 rounded-full bg-primary flex items-center justify-center text-white scale-110 shadow-lg font-bold">✓</div>}
+                      </button>
+
+                      <button 
+                        onClick={() => setSelectedPrintType('mixed')}
+                        className={cn(
+                          "relative rounded-3xl p-8 border-2 transition-all text-left group overflow-hidden",
+                          selectedPrintType === 'mixed' ? "border-indigo-600 bg-indigo-50/30 shadow-lg" : "border-muted hover:border-indigo-200"
+                        )}
+                      >
+                         <div className={cn(
+                           "h-14 w-14 rounded-2xl mb-6 flex items-center justify-center transition-all",
+                           selectedPrintType === 'mixed' ? "bg-indigo-600 text-white" : "bg-muted text-muted-foreground group-hover:bg-muted/80"
+                         )}>
+                           <Zap className="h-7 w-7" />
+                         </div>
+                         <h4 className="font-bold text-lg text-indigo-950">Mixed Content</h4>
+                         <p className="text-xs text-slate-400 mt-2 font-medium">For books with both B&W and Color pages.</p>
+                         <div className="mt-6 font-black text-indigo-600 uppercase tracking-widest text-[10px]">
+                            Negotiable / Manual
+                         </div>
+                         {selectedPrintType === 'mixed' && <div className="absolute top-6 right-6 h-6 w-6 rounded-full bg-indigo-600 flex items-center justify-center text-white scale-110 shadow-lg font-bold">✓</div>}
                       </button>
                     </div>
 
                     {/* Extra Services */}
-                    <div className="mt-12 pt-10 border-t flex flex-col sm:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                                <Edit2 className="h-6 w-6 text-muted-foreground" />
-                            </div>
-                            <div>
-                                <h4 className="font-bold">Professional Editing</h4>
-                                <p className="text-xs text-muted-foreground font-medium">Page layout, formatting, and typo fix.</p>
-                            </div>
+                    <div className="mt-12 pt-10 border-t grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="flex items-center justify-between p-6 rounded-[2rem] bg-slate-50 border border-slate-100">
+                           <div className="flex items-center gap-4">
+                               <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                                   <Edit2 className="h-6 w-6 text-indigo-600" />
+                               </div>
+                               <div>
+                                   <h4 className="font-bold text-sm">Professional Editing</h4>
+                                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Layout & Typos</p>
+                               </div>
+                           </div>
+                           <div className="flex items-center gap-4">
+                               <span className="font-black text-indigo-600">+{prices.editing.toLocaleString()}</span>
+                               <button 
+                                   onClick={() => setAddEditing(!addEditing)}
+                                   className={cn(
+                                       "px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
+                                       addEditing ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200" : "bg-white border border-slate-200 text-slate-400"
+                                   )}
+                               >
+                                   {addEditing ? 'Added' : 'Add'}
+                               </button>
+                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                            <span className="font-black text-primary">+{(services.editing?.retail_price ?? 0).toLocaleString()} RWF</span>
-                            <button 
-                                onClick={() => setAddEditing(!addEditing)}
-                                className={cn(
-                                    "px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all h-12",
-                                    addEditing ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20" : "bg-muted text-muted-foreground"
-                                )}
-                            >
-                                {addEditing ? 'Added' : 'Add Service'}
-                            </button>
+
+                        <div className="flex items-center justify-between p-6 rounded-[2rem] bg-slate-50 border border-slate-100">
+                           <div className="flex items-center gap-4">
+                               <div className="h-12 w-12 rounded-xl bg-white border border-slate-100 flex items-center justify-center shadow-sm">
+                                   <Layers className="h-6 w-6 text-emerald-600" />
+                               </div>
+                               <div>
+                                   <h4 className="font-bold text-sm">Book Binding</h4>
+                                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Cover & Binding</p>
+                               </div>
+                           </div>
+                           <div className="flex items-center gap-4">
+                               <span className="font-black text-emerald-600">+{prices.binding.toLocaleString()}</span>
+                               <button 
+                                   onClick={() => setAddBinding(!addBinding)}
+                                   className={cn(
+                                       "px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
+                                       addBinding ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200" : "bg-white border border-slate-200 text-slate-400"
+                                   )}
+                               >
+                                   {addBinding ? 'Added' : 'Add'}
+                               </button>
+                           </div>
                         </div>
                     </div>
                   </div>
 
                   <div className="rounded-[3rem] bg-white/50 backdrop-blur-md border p-8 flex flex-wrap items-center gap-12">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                             <Tag className="h-3 w-3" /> Paper Format
+                        </label>
+                        <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border shadow-sm">
+                           {['A4', 'A5', 'A3'].map((sz) => (
+                             <button 
+                               key={sz}
+                               onClick={() => setPaperSize(sz as any)}
+                               className={cn(
+                                 "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                                 paperSize === sz ? "bg-primary text-white shadow-lg" : "hover:bg-muted text-muted-foreground"
+                               )}
+                             >
+                               {sz}
+                             </button>
+                           ))}
+                        </div>
+                      </div>
+
                       <div className="space-y-4">
                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                              <Layers className="h-3 w-3" /> Volume (Pages)
@@ -547,25 +644,5 @@ export default function PrintPortal() {
         </div>
       </div>
     </PublicShell>
-  );
-}
-
-function CheckCircle2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }

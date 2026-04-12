@@ -74,6 +74,8 @@ export interface ContractPrice {
   id: string;
   client_id: string;
   product_id: string;
+  variant_id?: string;
+  unit_id?: string;
   negotiated_price: number;
 }
 

@@ -152,6 +152,10 @@ export function Navbar() {
             <Printer className="h-4 w-4" />
             Print Portal
           </Link>
+          <Link href="/track" className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">
+            <Search className="h-4 w-4" />
+            Track Order
+          </Link>
           
           <div className="h-6 w-px bg-border mx-2" />
 
@@ -186,6 +190,7 @@ export function Navbar() {
           <div className="flex flex-col gap-4">
             <Link href="/shop" className="text-lg font-bold">Storefront</Link>
             <Link href="/print-portal" className="text-lg font-bold text-primary">Print Portal</Link>
+            <Link href="/track" className="text-lg font-bold">Track Order</Link>
             <Link href="/cart" className="text-lg font-bold">Shopping Cart</Link>
             <div className="h-px bg-border my-2" />
             <Link href="/login" className="w-full rounded-2xl bg-primary py-4 text-center font-bold text-white">Sign In</Link>

@@ -151,21 +151,99 @@ export const productService = {
     return this.getById(parent.id);
   },
 
-   async update(id: string, updates: Partial<Product>): Promise<Product | null> {
-    // Current simple implementation: updates parent only. 
-    // Variable product editing will be handled by a specialized management UI.
-    const { data, error } = await supabase
-      .from('products')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+  async update(id: string, updates: any): Promise<Product | null> {
+    // 1. Destructure to separate parent product fields from variant/compatibility fields
+    const { 
+      variants, 
+      selling_price, 
+      buying_price, 
+      retail_price, 
+      stock_quantity, 
+      sku, 
+      packaging,
+      created_at,
+      updated_at,
+      ...parentUpdates 
+    } = updates;
 
-    if (error) {
-      console.error('Error updating product:', error);
+    // 2. Update the parent product record
+    const { error: pError } = await supabase
+      .from('products')
+      .update(parentUpdates)
+      .eq('id', id);
+
+    if (pError) {
+      console.error('Error updating parent product:', pError);
       return null;
     }
-    return this.getById(id);
+
+    // 3. Sync Logic based on product complexity
+    if (updates.has_variants && variants) {
+      // Complex Sync: Loop through all variants and sync their specific data
+      for (const v of variants) {
+        const { packaging: vPkg, tempId, created_at: _cv, updated_at: _uv, product_id: _pid, ...vInfo } = v;
+        
+        let variantId = v.id;
+        if (variantId) {
+          // Update existing variant record
+          await supabase.from('product_variants').update(vInfo).eq('id', variantId);
+        } else {
+          // Safety: If no ID but exists in array, it's a new variation added during edit
+          const { data: newV } = await supabase
+            .from('product_variants')
+            .insert({ ...vInfo, product_id: id })
+            .select()
+            .single();
+          variantId = newV?.id;
+        }
+
+        // Sync Packaging Units for THIS specific variant
+        if (variantId && vPkg) {
+          await supabase.from('product_packaging').delete().eq('variant_id', variantId);
+          if (vPkg.length > 0) {
+            await supabase.from('product_packaging').insert(
+              vPkg.map((p: any) => ({
+                variant_id: variantId,
+                unit_name: p.unit_name,
+                conversion_factor: p.conversion_factor,
+                selling_price: p.selling_price
+              }))
+            );
+          }
+        }
+      }
+    } else {
+      // Simple Sync: Update the default variant and its global packaging
+      const { data: variant, error: vError } = await supabase
+        .from('product_variants')
+        .update({
+          selling_price,
+          buying_price,
+          retail_price,
+          stock_quantity,
+          sku
+        })
+        .eq('product_id', id)
+        .eq('is_default', true)
+        .select().single();
+
+      if (!vError && variant && packaging) {
+        // Sync Packaging Units for the default variant
+        await supabase.from('product_packaging').delete().eq('variant_id', variant.id);
+        if (packaging.length > 0) {
+          await supabase.from('product_packaging').insert(
+            packaging.map((p: any) => ({
+              variant_id: variant.id,
+              unit_name: p.unit_name,
+              conversion_factor: p.conversion_factor,
+              selling_price: p.selling_price
+            }))
+          );
+        }
+      }
+    }
+
+    return productService.getById(id);
   },
 
   async getContractPrices(clientId: string): Promise<ContractPrice[] | null> {

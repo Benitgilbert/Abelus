@@ -58,6 +58,7 @@ export default function InventoryPage() {
     name: '',
     description: '',
     category_id: '',
+    is_service: false,
     image_url: '',
     has_variants: false,
     selling_price: 0,
@@ -90,13 +91,15 @@ export default function InventoryPage() {
 
   // Professional SKU Generation Logic (sku-1001)
   const generateSmartSKU = (indexOffset = 0) => {
-    const baseCount = products.length + 1001; // Start at 1001 for a mature look
+    const baseCount = products.length + 1001;
     const count = baseCount + indexOffset;
-    return `sku-${String(count).padStart(4, '0')}`;
+    // Add seconds and a random part to ensure absolute uniqueness across variants
+    const entropy = `${new Date().getSeconds()}${Math.floor(Math.random() * 100)}`;
+    return `SKU-${count}-${entropy}`;
   };
 
   const handleCreateProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     
     try {
@@ -120,10 +123,8 @@ export default function InventoryPage() {
 
       let res;
       if (editingProductId) {
-        // Strip variants for update as the service currently only updates parent fields
-        // and to avoid type mismatch with variants missing IDs
-        const { variants: _v, ...updates } = payload;
-        res = await productService.update(editingProductId, updates as Partial<Product>);
+        // Ensure we pass the full payload including variants and packaging
+        res = await productService.update(editingProductId, payload);
       } else {
         res = await productService.create(payload);
       }
@@ -145,6 +146,7 @@ export default function InventoryPage() {
     setEditingProductId(null);
     setProductForm({
         name: '', description: '', category_id: categories.length > 0 ? categories[0].id : '',
+        is_service: false,
         image_url: '', has_variants: false, selling_price: 0, buying_price: 0,
         stock_quantity: 0, sku: ''
     });
@@ -329,14 +331,25 @@ export default function InventoryPage() {
                               <Field label="Manual SKU (Optional)" value={productForm.sku} onChange={(v: string) => setProductForm({...productForm, sku: v})} placeholder="Auto-generated if empty" />
                             </div>
 
-                            <label className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-white hover:border-indigo-300 transition-all group">
-                              <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-50" checked={productForm.has_variants} onChange={() => setProductForm({...productForm, has_variants: !productForm.has_variants})} />
-                              <div className="flex-1">
-                                <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-tight">Enable Complex Variations</span>
-                                <span className="block text-[9px] text-slate-500 font-medium">Use for products with multiple colors, sizes, or materials.</span>
-                              </div>
-                              <Zap className={cn("h-4 w-4 transition-colors", productForm.has_variants ? "text-indigo-600" : "text-slate-300")} />
-                            </label>
+                            <div className="space-y-3">
+                              <label className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-white hover:border-indigo-300 transition-all group">
+                                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-50" checked={productForm.is_service} onChange={() => setProductForm({...productForm, is_service: !productForm.is_service})} />
+                                <div className="flex-1">
+                                  <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-tight">Register as Service</span>
+                                  <span className="block text-[9px] text-slate-500 font-medium">Use for labor/services. Disables stock tracking for this item.</span>
+                                </div>
+                                <Package className={cn("h-4 w-4 transition-colors", productForm.is_service ? "text-emerald-600" : "text-slate-300")} />
+                              </label>
+
+                              <label className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-white hover:border-indigo-300 transition-all group">
+                                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-50" checked={productForm.has_variants} onChange={() => setProductForm({...productForm, has_variants: !productForm.has_variants})} />
+                                <div className="flex-1">
+                                  <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-tight">Enable Complex Variations</span>
+                                  <span className="block text-[9px] text-slate-500 font-medium">Use for products with multiple colors, sizes, or materials.</span>
+                                </div>
+                                <Zap className={cn("h-4 w-4 transition-colors", productForm.has_variants ? "text-indigo-600" : "text-slate-300")} />
+                              </label>
+                            </div>
                           </div>
                         </div>
 
@@ -479,8 +492,9 @@ export default function InventoryPage() {
                   <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50 flex justify-end gap-3 items-center shrink-0">
                     <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-lg text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancel Draft</button>
                     <button 
-                      onClick={handleCreateProduct}
+                      type="submit"
                       disabled={loading}
+                      onClick={handleCreateProduct}
                       className="px-8 py-2.5 rounded-lg bg-indigo-600 text-xs font-bold text-white shadow-lg shadow-indigo-100 hover:bg-slate-900 transition-all disabled:opacity-50 flex items-center gap-2"
                     >
                       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Plus className="h-3 w-3" /> Save To Vault</>}
@@ -495,8 +509,8 @@ export default function InventoryPage() {
         {/* Dashboard Visualization */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
            <OverviewCard title="Asset Catalog" value={loading ? "..." : products.length} label="Total Unique SKUs Managed" color="blue" />
-           <OverviewCard title="Stock Integrity" value={loading ? "..." : products.reduce((acc, p) => acc + (p.stock_quantity || 0), 0)} label="Total Physical Pieces" color="indigo" />
-           <OverviewCard title="Low Stock Alerts" value={loading ? "..." : products.filter(p => (p.stock_quantity || 0) <= 20).length} label="Items below refill threshold" color="amber" />
+           <OverviewCard title="Stock Integrity" value={loading ? "..." : products.reduce((acc, p) => acc + (p.is_service ? 0 : (p.stock_quantity || 0)), 0)} label="Total Physical Pieces" color="indigo" />
+           <OverviewCard title="Low Stock Alerts" value={loading ? "..." : products.filter(p => !p.is_service && (p.stock_quantity || 0) <= 20).length} label="Items below refill threshold" color="amber" />
         </div>
 
         {/* Registry Master Table */}
@@ -567,10 +581,14 @@ export default function InventoryPage() {
                            <div className="flex flex-col items-center gap-1">
                               <div className={cn(
                                 "text-sm font-bold px-3 py-1 rounded-md inline-flex items-center gap-1.5",
-                                (p.stock_quantity || 0) <= 20 ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                                p.is_service 
+                                  ? "bg-slate-100 text-slate-500" 
+                                  : (p.stock_quantity || 0) <= 20 
+                                    ? "bg-red-50 text-red-600" 
+                                    : "bg-emerald-50 text-emerald-600"
                               )}>
-                                 {(p.stock_quantity || 0).toLocaleString()}
-                                 <span className="text-[9px] font-medium opacity-60">pcs</span>
+                                 {p.is_service ? 'SERVICE' : (p.stock_quantity || 0).toLocaleString()}
+                                 {!p.is_service && <span className="text-[9px] font-medium opacity-60">pcs</span>}
                               </div>
                               <div className="flex flex-wrap gap-1 justify-center max-w-[150px]">
                                 {p.variants?.[0]?.packaging?.map(unit => (
@@ -604,9 +622,17 @@ export default function InventoryPage() {
                                     selling_price: p.selling_price || 0,
                                     stock_quantity: p.stock_quantity || 0,
                                     image_url: p.image_url || '',
+                                    is_service: p.is_service || false,
                                     has_variants: p.has_variants || false
                                   });
-                                  if (p.variants) setVariants(p.variants.map((v: any) => ({ ...v, tempId: Math.random().toString() })));
+                                  if (p.variants) {
+                                    setVariants(p.variants.map((v: any) => ({ ...v, tempId: Math.random().toString() })));
+                                    // Populate custom units from the first variant (or default)
+                                    const variantWithUnits = p.variants.find((v: any) => v.packaging && v.packaging.length > 0) || p.variants[0];
+                                    if (variantWithUnits?.packaging) {
+                                      setCustomUnits(variantWithUnits.packaging);
+                                    }
+                                  }
                                   setIsModalOpen(true);
                                 }}
                                 className="h-9 w-9 bg-white rounded-lg border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-all flex items-center justify-center shadow-sm"

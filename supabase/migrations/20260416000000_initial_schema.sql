@@ -308,7 +308,7 @@ begin
 
   -- 3. Debt Calculation
   v_debt_to_add := p_total_amount - p_amount_paid;
-  if p_client_id is not null and v_debt_to_add > 0 then
+  if p_client_id is not null then
     update clients_market set debt_balance = debt_balance + v_debt_to_add where id = p_client_id;
   end if;
 

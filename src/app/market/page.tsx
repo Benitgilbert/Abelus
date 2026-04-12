@@ -13,13 +13,18 @@ import {
   TrendingDown,
   History,
   X,
-  Loader2
+  Loader2,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { MarketClient } from '@/types';
+import { MarketClient, Product, ContractPrice } from '@/types';
 import { clientService } from '@/lib/services/client-service';
+import { productService } from '@/lib/services/product-service';
+import { billingService } from '@/lib/services/billing-service';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { PaymentRequestPrint } from '@/components/shared/PaymentRequestPrint';
+import { ClientDetailModal } from '@/components/shared/client/ClientDetailModal';
 
 export default function MarketClientsPage() {
   const { user } = useAuth();
@@ -35,16 +40,43 @@ export default function MarketClientsPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Detail Modal states
+  const [selectedClient, setSelectedClient] = useState<MarketClient | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [contractPrices, setContractPrices] = useState<ContractPrice[]>([]);
+  const [unbilledTx, setUnbilledTx] = useState<any[]>([]);
+  const [invoiceHistory, setInvoiceHistory] = useState<any[]>([]);
+  const [reconciling, setReconciling] = useState<string | null>(null);
+  const [printingRequest, setPrintingRequest] = useState<{ request: any, transactions: any[] } | null>(null);
+
   useEffect(() => {
     fetchClients();
+    fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    const data = await productService.getAll();
+    if (data) setProducts(data);
+  };
 
   const fetchClients = async () => {
     setLoading(true);
     const data = await clientService.getAll();
-    if (data) {
-      setClients(data);
-    }
+    if (data) setClients(data);
+    setLoading(false);
+  };
+
+  const fetchClientDetails = async (client: MarketClient) => {
+    setSelectedClient(client);
+    setLoading(true);
+    const [cData, bData, hData] = await Promise.all([
+      productService.getContractPrices(client.id),
+      billingService.getUnbilledTransactions(client.id),
+      billingService.getClientInvoices(client.id)
+    ]);
+    if (cData) setContractPrices(cData);
+    if (bData) setUnbilledTx(bData);
+    if (hData) setInvoiceHistory(hData);
     setLoading(false);
   };
 
@@ -55,6 +87,88 @@ export default function MarketClientsPage() {
 
   const totalOutstanding = clients.reduce((acc, c) => acc + Number(c.debt_balance), 0);
 
+  const handlePriceUpdate = async (productId: string, variantId: string | undefined, unitId: string | undefined, newPrice: number, sync: boolean) => {
+    if (!selectedClient) return;
+    const reconciliationId = `${productId}-${variantId || 'base'}-${unitId || 'base'}`;
+    setReconciling(reconciliationId);
+    
+    const success = await billingService.upsertContractPrice(selectedClient.id, productId, variantId, unitId, newPrice);
+    
+    if (success && sync) {
+      await billingService.reconcilePrices(selectedClient.id, productId, variantId, unitId, newPrice);
+      const updatedClient = await clientService.getById(selectedClient.id);
+      if (updatedClient) {
+        setSelectedClient(updatedClient);
+        fetchClients();
+      }
+    }
+    
+    const updatedPrices = await productService.getContractPrices(selectedClient.id);
+    if (updatedPrices) setContractPrices(updatedPrices);
+    setReconciling(null);
+  };
+
+  const handlePriceDelete = async (contractId: string) => {
+    if (!selectedClient) return;
+    const success = await billingService.deleteContractPrice(contractId);
+    if (success) {
+      const updatedPrices = await productService.getContractPrices(selectedClient.id);
+      if (updatedPrices) setContractPrices(updatedPrices);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    if (!selectedClient || unbilledTx.length === 0) return;
+    setIsSubmitting(true);
+    const txIds = unbilledTx.map(tx => tx.id);
+    const requestId = await billingService.generatePaymentRequest(selectedClient.id, txIds, "Standard monthly reconciliation");
+    if (requestId) {
+      // Auto-preview logic
+      const invoiceData = await billingService.getPaymentRequest(requestId);
+      if (invoiceData) {
+        setPrintingRequest(invoiceData);
+      }
+      fetchClientDetails(selectedClient);
+    } else {
+      alert("Billing Error: Failed to generate payment request. Please check the system logs or permissions.");
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleViewInvoice = async (requestId: string) => {
+    if (!selectedClient) return;
+    setLoading(true);
+    const invoiceData = await billingService.getPaymentRequest(requestId);
+    if (invoiceData) {
+      setPrintingRequest(invoiceData);
+    }
+    setLoading(false);
+  };
+
+  const handleUpdateClient = async (clientId: string, updates: any) => {
+    setIsSubmitting(true);
+    const success = await billingService.updateClient(clientId, updates);
+    if (success) {
+      await fetchClients();
+      // Update selected client state to reflect changes in modal
+      const updated = clients.find(c => c.id === clientId);
+      if (updated) setSelectedClient({ ...updated, ...updates });
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleDeleteClient = async (clientId: string) => {
+    if (!confirm('Are you absolutely sure? This will remove the client from all dashboards.')) return;
+    
+    setIsSubmitting(true);
+    const success = await billingService.deleteClient(clientId);
+    if (success) {
+      setSelectedClient(null);
+      await fetchClients();
+    }
+    setIsSubmitting(false);
+  };
+
   const handleOnboard = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -62,14 +176,7 @@ export default function MarketClientsPage() {
     if (data) {
       setClients([data, ...clients]);
       setIsModalOpen(false);
-      setNewClient({
-        org_name: '',
-        phone: '',
-        location: '',
-        credit_limit: 1000000,
-      });
-    } else {
-      alert('Failed to onboard client. Please check logs.');
+      setNewClient({ org_name: '', phone: '', location: '', credit_limit: 1000000 });
     }
     setIsSubmitting(false);
   };
@@ -80,8 +187,8 @@ export default function MarketClientsPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold font-outfit text-brand-secondary">Market Clients (B2B)</h1>
-            <p className="text-muted-foreground mt-1 text-lg">Manage organizational contracts, credit limits, and debt collection.</p>
+            <h1 className="text-3xl font-bold font-outfit text-brand-secondary">Client Abonné</h1>
+            <p className="text-muted-foreground mt-1 text-lg uppercase tracking-tight font-medium opacity-70">Subscriber contracts & debt balance</p>
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
@@ -94,30 +201,9 @@ export default function MarketClientsPage() {
 
         {/* B2B Stats Grid */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <div className="rounded-2xl border bg-card/50 p-6 shadow-sm">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <Users className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wider">Total B2B Clients</span>
-            </div>
-            <p className="mt-2 text-3xl font-bold">{loading ? "..." : clients.length}</p>
-          </div>
-          <div className="rounded-2xl border bg-brand-primary/10 p-6 text-brand-primary border-brand-primary/20">
-            <div className="flex items-center gap-3 opacity-80">
-              <TrendingDown className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wider">Total Outstanding Debt</span>
-            </div>
-            <p className="mt-2 text-3xl font-bold">
-              {loading ? "..." : totalOutstanding.toLocaleString()} 
-              <span className="text-xs font-medium uppercase ml-1">RWF</span>
-            </p>
-          </div>
-          <div className="rounded-2xl border bg-card/50 p-6 shadow-sm">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <ArrowUpRight className="h-5 w-5" />
-              <span className="text-sm font-bold uppercase tracking-wider">Active Credits</span>
-            </div>
-            <p className="mt-2 text-3xl font-bold">{clients.filter(c => c.debt_balance > 0).length}</p>
-          </div>
+          <StatSummary label="Total Client Abonné" value={loading ? "..." : clients.length} icon={Users} />
+          <StatSummary label="Total Outstanding Debt" value={loading ? "..." : Number(totalOutstanding).toLocaleString()} sub="RWF" icon={TrendingDown} highlight />
+          <StatSummary label="Active Credits" value={clients.filter(c => c.debt_balance > 0).length} icon={ArrowUpRight} />
         </div>
 
         {/* Clients List */}
@@ -127,7 +213,7 @@ export default function MarketClientsPage() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <input 
                 type="text" 
-                placeholder="Search market clients by name or location..." 
+                placeholder="Search Client Abonné by name or location..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full rounded-2xl border bg-card/30 py-3 pl-12 pr-4 font-medium outline-none focus:ring-2 focus:ring-secondary/20"
@@ -136,7 +222,7 @@ export default function MarketClientsPage() {
             <button onClick={fetchClients} className="rounded-xl border bg-card/50 px-4 py-3 font-bold text-sm">Refresh</button>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 relative min-h-[400px]">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 relative items-start">
             {loading && (
               <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm z-10">
                 <Loader2 className="h-8 w-8 animate-spin text-secondary" />
@@ -144,150 +230,78 @@ export default function MarketClientsPage() {
             )}
             
             {filteredClients.map(market => (
-              <div key={market.id} className="group relative rounded-3xl border bg-card/40 p-6 backdrop-blur-md transition-all hover:shadow-xl hover:shadow-secondary/5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary text-white font-bold text-xl shadow-lg">
-                      {market.org_name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-extrabold text-foreground group-hover:text-secondary transition-colors line-clamp-1">{market.org_name}</h3>
-                      <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground font-medium uppercase tracking-wide">
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {market.location || 'N/A'}</span>
-                        <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> {market.phone || 'N/A'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button className="rounded-lg bg-muted p-2 hover:bg-secondary/10 hover:text-secondary transition-colors">
-                    <Plus className="h-5 w-5" />
-                  </button>
-                </div>
-
-                <div className="mt-8 grid grid-cols-2 gap-4 border-t pt-6">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Outstanding Balance</p>
-                    <p className={cn(
-                      "mt-1 text-2xl font-black",
-                      market.debt_balance > 0 ? "text-amber-600" : "text-emerald-600"
-                    )}>
-                      {Number(market.debt_balance).toLocaleString()} <span className="text-[10px] font-medium">RWF</span>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Credit Limit Used</p>
-                    <div className="mt-2 h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className={cn(
-                          "h-full rounded-full transition-all duration-500",
-                          market.credit_limit > 0 && (market.debt_balance / market.credit_limit) > 0.8 ? "bg-red-500" : "bg-secondary"
-                        )} 
-                        style={{ width: `${market.credit_limit > 0 ? Math.min((market.debt_balance / market.credit_limit) * 100, 100) : 0}%` }}
-                      />
-                    </div>
-                    <p className="mt-1 text-[10px] font-bold">
-                      {market.credit_limit > 0 ? (market.debt_balance / market.credit_limit * 100).toFixed(1) : 0}% of {Number(market.credit_limit).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground italic truncate max-w-[150px]">
-                    Contract status: Active
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 rounded-xl bg-secondary/5 px-4 py-2 text-xs font-bold text-secondary hover:bg-secondary hover:text-white transition-all">
-                      <FileText className="h-3.5 w-3.5" />
-                      Generate Statement
-                    </button>
-                    <button className="rounded-xl border p-2 hover:bg-muted transition-colors">
-                      <History className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <ClientCard key={market.id} client={market} onClick={() => fetchClientDetails(market)} />
             ))}
-            
-            {!loading && filteredClients.length === 0 && (
-              <div className="col-span-full py-20 text-center text-muted-foreground italic">
-                No market clients found.
-              </div>
-            )}
           </div>
         </div>
       </div>
+
+      {/* Details & Management Modal */}
+      <AnimatePresence>
+        {selectedClient && (
+          <ClientDetailModal 
+            client={selectedClient}
+            products={products}
+            contractPrices={contractPrices}
+            unbilledTx={unbilledTx}
+            isSubmitting={isSubmitting}
+            onClose={() => setSelectedClient(null)}
+            onPriceUpdate={handlePriceUpdate}
+            onPriceDelete={handlePriceDelete}
+            onGenerateInvoice={handleGenerateInvoice}
+            onPrintDraft={(tx) => setPrintingRequest({ request: { id: 'DRAFT', total_amount: tx.total_amount }, transactions: [tx] })}
+            reconciling={reconciling}
+            onUpdateProfile={handleUpdateClient}
+            onDeleteClient={handleDeleteClient}
+            invoiceHistory={invoiceHistory}
+            onViewInvoice={handleViewInvoice}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Printing Overlay */}
+      <AnimatePresence>
+        {printingRequest && (
+          <div className="fixed inset-0 z-[100] flex flex-col bg-white overflow-y-auto">
+             <div className="sticky top-0 z-10 bg-slate-900 text-white p-4 flex justify-between items-center print:hidden">
+                <div className="flex items-center gap-4">
+                   <button onClick={() => setPrintingRequest(null)} className="p-2 hover:bg-white/10 rounded-lg"><X className="h-6 w-6" /></button>
+                   <span className="font-bold uppercase tracking-widest text-sm text-slate-400">Preview Payment Request</span>
+                </div>
+                <button onClick={() => window.print()} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2 rounded-xl text-sm font-black flex items-center gap-2 shadow-lg">
+                  <Printer className="h-4 w-4" />
+                  Print Now
+                </button>
+             </div>
+             <div className="flex-1">
+                <PaymentRequestPrint client={selectedClient} request={printingRequest.request} transactions={printingRequest.transactions} />
+             </div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Onboarding Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-lg rounded-3xl border bg-card p-8 shadow-2xl"
-            >
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-lg rounded-3xl border bg-white p-8 shadow-2xl">
               <div className="mb-6 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold font-outfit">Onboard Market Client</h2>
-                  <p className="text-sm text-muted-foreground mt-1 text-medium">Create a new B2B contract with custom credit limits.</p>
+                  <h2 className="text-2xl font-bold font-outfit">Onboard New Client Abonné</h2>
+                  <p className="text-sm text-muted-foreground mt-1 text-medium uppercase tracking-tight">Create a new Subscriber contract</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="rounded-full p-2 hover:bg-muted"><X className="h-5 w-5" /></button>
+                <button onClick={() => setIsModalOpen(false)} className="rounded-full p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button>
               </div>
-
               <form onSubmit={handleOnboard} className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Company / Organization Name</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="e.g. Kigali Heights Corp"
-                    value={newClient.org_name}
-                    onChange={e => setNewClient({...newClient, org_name: e.target.value})}
-                    className="w-full rounded-2xl border bg-muted/30 px-5 py-3 font-medium outline-none focus:ring-2 focus:ring-secondary/20"
-                  />
-                </div>
-
+                <InputGroup label="Company Name" placeholder="e.g. Kigali Heights Corp" value={newClient.org_name} onChange={(v: string) => setNewClient({...newClient, org_name: v})} />
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Phone Number</label>
-                    <input 
-                      type="tel" 
-                      placeholder="+250..."
-                      value={newClient.phone}
-                      onChange={e => setNewClient({...newClient, phone: e.target.value})}
-                      className="w-full rounded-2xl border bg-muted/30 px-5 py-3 font-medium outline-none focus:ring-2 focus:ring-secondary/20"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Credit Limit (RWF)</label>
-                    <input 
-                      type="number" 
-                      required 
-                      value={newClient.credit_limit}
-                      onChange={e => setNewClient({...newClient, credit_limit: Number(e.target.value)})}
-                      className="w-full rounded-2xl border bg-muted/30 px-5 py-3 font-bold text-secondary outline-none focus:ring-2 focus:ring-secondary/20"
-                    />
-                  </div>
+                  <InputGroup label="Phone" placeholder="+250..." value={newClient.phone} onChange={(v: string) => setNewClient({...newClient, phone: v})} />
+                  <InputGroup label="Credit Limit (RWF)" type="number" value={newClient.credit_limit} onChange={(v: string) => setNewClient({...newClient, credit_limit: Number(v)})} />
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">Operational Location</label>
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Gasabo, Kigali"
-                    value={newClient.location}
-                    onChange={e => setNewClient({...newClient, location: e.target.value})}
-                    className="w-full rounded-2xl border bg-muted/30 px-5 py-3 font-medium outline-none focus:ring-2 focus:ring-secondary/20"
-                  />
-                </div>
-
+                <InputGroup label="Location" placeholder="e.g. Gasabo, Kigali" value={newClient.location} onChange={(v: string) => setNewClient({...newClient, location: v})} />
                 <div className="pt-4">
-                  <button 
-                    type="submit" 
-                    disabled={isSubmitting}
-                    className="w-full rounded-2xl bg-secondary py-4 text-sm font-extrabold text-white shadow-xl shadow-secondary/20 hover:bg-secondary/90 transition-all disabled:opacity-50 active:scale-95"
-                  >
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : "Complete Onboarding"}
+                  <button type="submit" disabled={isSubmitting} className="w-full rounded-2xl bg-secondary py-4 text-sm font-extrabold text-white shadow-xl hover:bg-secondary/90 disabled:opacity-50">
+                    {isSubmitting ? "Processing..." : "Complete Onboarding"}
                   </button>
                 </div>
               </form>
@@ -296,5 +310,71 @@ export default function MarketClientsPage() {
         )}
       </AnimatePresence>
     </AppShell>
+  );
+}
+
+// Sub-components
+function StatSummary({ label, value, sub, icon: Icon, highlight }: any) {
+  return (
+    <div className={cn("rounded-2xl border p-4 shadow-sm", highlight ? "bg-brand-primary/10 text-brand-primary border-brand-primary/20" : "bg-card/50")}>
+      <div className={cn("flex items-center gap-2", !highlight && "text-muted-foreground")}>
+        <Icon className="h-4 w-4" />
+        <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+      </div>
+      <p className="mt-1 text-2xl font-black">{value} <span className="text-[10px] font-medium uppercase ml-0.5">{sub}</span></p>
+    </div>
+  );
+}
+
+function ClientCard({ client, onClick }: any) {
+  return (
+    <div onClick={onClick} className="group relative rounded-2xl border bg-card/40 p-5 backdrop-blur-md transition-all hover:shadow-xl hover:shadow-secondary/5 cursor-pointer active:scale-[0.98]">
+      <div className="flex items-start justify-between">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-white font-black text-lg shadow-md">
+            {client.org_name.charAt(0)}
+          </div>
+          <div className="overflow-hidden">
+            <h3 className="text-md font-extrabold text-foreground group-hover:text-secondary transition-colors truncate">{client.org_name}</h3>
+            <div className="mt-0.5 flex flex-col text-[10px] text-muted-foreground font-bold uppercase tracking-wide">
+              <span className="flex items-center gap-1.5"><MapPin className="h-3 w-3" /> {client.location || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-lg bg-muted p-1.5 hover:bg-secondary/10 hover:text-secondary transition-colors">
+          <ArrowUpRight className="h-4 w-4" />
+        </div>
+      </div>
+      <div className="mt-6 grid grid-cols-2 gap-3 border-t pt-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Outstanding Balance</p>
+          <p className={cn("mt-1 text-2xl font-black", client.debt_balance > 0 ? "text-amber-600" : "text-emerald-600")}>
+            {Number(client.debt_balance).toLocaleString()} <span className="text-[10px] font-medium">RWF</span>
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Credit Utilization</p>
+          <p className="mt-2 text-sm font-black text-slate-800">
+            {client.credit_limit > 0 ? (client.debt_balance / client.credit_limit * 100).toFixed(1) : 0}%
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InputGroup({ label, placeholder, value, onChange, type = "text" }: any) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">{label}</label>
+      <input 
+        type={type} 
+        required 
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        className="w-full rounded-2xl border bg-muted/30 px-5 py-3 font-medium outline-none focus:ring-2 focus:ring-secondary/20"
+      />
+    </div>
   );
 }
