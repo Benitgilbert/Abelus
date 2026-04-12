@@ -68,18 +68,18 @@ graph TD
     User((Staff/Admin)) -->|POS/Audit| App[Abelus Dashboard]
     Client((Customer)) -->|Track Order| Portal[Client Portal]
     
-    subgraph "Core Backend"
+    subgraph core_backend ["Core Backend"]
         App -->|Submit Sale| DB[(Supabase Postgres)]
         Portal -->|Fetch Status| DB
         DB -->|Trigger| Notify[WhatsApp API]
     end
 
-    subgraph "Analytical Layer"
+    subgraph analytics_layer ["Analytical Layer"]
         DB -->|Ledger Data| Analytics[Financial Reporting]
         DB -->|Stock Sync| Inventory[Inventory Management]
     end
     
-    style "Core Backend" fill:#f0fff8,stroke:#10b981,stroke-width:2px
+    style core_backend fill:#f0fff8,stroke:#10b981,stroke-width:2px
 ```
 
 ---
