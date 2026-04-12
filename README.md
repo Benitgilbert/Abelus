@@ -1,5 +1,5 @@
 
-# 🌌 ABELUS | The Unified Enterprise Operating System
+# 🌌 ABELUS | The Unified Business Operating System
 
 <div align="center">
 
@@ -17,7 +17,7 @@
      \/__/         \/__/         \/__/         \/__/         \/__/         \/__/    
 ```
 
-**[ Pharmacy • Retail POS • Print Management • Financial Intelligence ]**
+**[ General Retail • Stationery • Print Management • Financial Intelligence ]**
 
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=black)](https://supabase.com/)
@@ -29,35 +29,35 @@
 ---
 
 ## 💎 The Vision
-**Abelus** is a high-performance, professional-grade management ecosystem designed for modern Rwandan enterprises. Built with a "surgical" UI aesthetic and high-density information architecture, it unifies retail operations, pharmaceutical stock management, and custom service auditing into a single source of truth.
+**Abelus** is a high-performance, professional-grade management ecosystem designed for modern Rwandan enterprises. Built with a "surgical" UI aesthetic and high-density information architecture, it unifies retail operations, stationery stock management, and custom print service auditing into a single source of truth.
 
 ---
 
 ## 🛠️ Core Modules
 
-### 💊 1. Executive Pharmacy Dashboard
-A clinical-grade interface for managing health inventory.
-- **Granular Tracking**: Real-time stock alerts and expiration monitoring.
-- **Procurement Engine**: Automated stock replenishment workflows.
-- **Prescription Ledger**: Encrypted medication history tracking.
+### 📦 1. Executive Inventory Control
+Advanced management for general retail and stationery goods.
+- **Granular Tracking**: Real-time stock alerts and replenishment monitoring.
+- **Product Variants**: Support for complex product structures (sizes, units, packaging).
+- **Shortage Analytics**: Intelligent detection of low-stock items across all categories.
 
-### 🛒 2. Dynamic Retail POS
-A sleek, high-speed Point of Sale optimized for any device.
-- **Smart Checkout**: Support for Cash, MoMo, and Credit workflows.
+### 🛒 2. Smart Retail POS
+A sleek, high-speed Point of Sale optimized for any retail environment.
+- **Multi-Payment Checkout**: Integrated workflows for Cash, MoMo, and Credit.
 - **Contract Pricing**: Client-specific negotiated rates injected at point-of-sale.
-- **Responsive Ledger**: Real-time sales visualization and staff performance metrics.
+- **Transaction Ledger**: Real-time sales visualization and staff performance tracking.
 
-### 🖨️ 3. Print Audit Workstation
-The ultimate engine for custom printing services.
-- **Integrated Audit Node**: Pop-up workstation for B&W/Color auditing.
-- **Universal Editable Rates**: Real-time yield calculation for Pages, Binding, and Editing.
-- **WhatsApp Automation**: Kinyarwanda-localized client status notifications via one-click API.
+### 🖨️ 4. Print Audit Workstation
+The specialized engine for managing walk-in and bulk printing services.
+- **Service Audit Modal**: Pop-up workstation for B&W, Color, Binding, and Editing audits.
+- **Universal Editable Rates**: Real-time yield calculation for customized service billing.
+- **WhatsApp Automation**: Kinyarwanda-localized client status notifications via integrated API.
 
-### 📈 4. Financial Intelligence
-Actionable data to drive business growth.
+### 📈 5. Financial Intelligence
+Comprehensive tools for tracking business health.
 - **Universal Tracking**: Every transaction linked via `tracking_id` across POS and Online channels.
-- **Dynamic P&L**: Automated revenue breakdowns by category and staff.
-- **Debt Management**: Automated balance tracking for contract clients.
+- **Revenue Breakdown**: Daily/Weekly P&L visualizations by service type and staff member.
+- **Credit Management**: Clear auditing for contract-based client debts and credit limits.
 
 ---
 
@@ -65,21 +65,21 @@ Actionable data to drive business growth.
 
 ```mermaid
 graph TD
-    User((Client/Staff)) -->|Request| POS[POS Interface]
-    User -->|Request| Admin[Admin Dashboard]
+    User((Staff/Admin)) -->|POS/Audit| App[Abelus Dashboard]
+    Client((Customer)) -->|Track Order| Portal[Client Portal]
     
-    subgraph "Abelus Engine"
-        POS -->|Transaction| DB[(Supabase Postgres)]
-        Admin -->|Audit| DB
-        DB -->|Real-time| Notify[WhatsApp API]
+    subgraph "Core Backend"
+        App -->|Submit Sale| DB[(Supabase Postgres)]
+        Portal -->|Fetch Status| DB
+        DB -->|Trigger| Notify[WhatsApp API]
     end
 
-    subgraph "Data Storage"
-        DB -->|Buckets| Storage[Storage Assets]
-        DB -->|Logs| Analytics[Financial Ledger]
+    subgraph "Analytical Layer"
+        DB -->|Ledger Data| Analytics[Financial Reporting]
+        DB -->|Stock Sync| Inventory[Inventory Management]
     end
     
-    style Abelus Engine fill:#f0fff8,stroke:#10b981,stroke-width:2px
+    style "Core Backend" fill:#f0fff8,stroke:#10b981,stroke-width:2px
 ```
 
 ---
@@ -89,32 +89,9 @@ graph TD
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) (Emerald/Slate Design System)
 - **Backend / Auth**: [Supabase](https://supabase.com/)
 - **Animations**: [Framer Motion](https://framer.com/motion)
-- **Icons**: [Lucide React](https://lucide.dev/)
-
----
-
-## ⚙️ Quick Start
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/Benitgilbert/Abelus.git
-```
-
-### 2. Environment Setup
-Create a `.env.local` file with your credentials:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
-```
-
-### 3. Launch Development
-```bash
-npm install
-npm run dev
-```
 
 ---
 
 <div align="center">
-Built with ❤️ by <b>Antigravity</b> for <b>Abelus Enterprise</b>
+Built for <b>Abelus Enterprise</b>
 </div>
