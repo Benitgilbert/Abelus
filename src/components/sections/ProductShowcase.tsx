@@ -55,7 +55,7 @@ export function ProductShowcase() {
                  ) : (
                    <ShoppingCart className="h-12 w-12 text-muted-foreground opacity-20 group-hover:opacity-40 transition-opacity" />
                  )}
-                 {(product.stock_quantity ?? 0) <= 5 && (
+                 {!product.is_service && (product.stock_quantity ?? 0) <= 5 && (
                    <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-black px-2 py-1 rounded-lg uppercase">Low Stock</span>
                  )}
               </div>
