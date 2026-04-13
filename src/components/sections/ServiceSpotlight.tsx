@@ -76,7 +76,7 @@ export function ServiceSpotlight() {
                     </div>
                     <div className="flex items-center justify-between border-t pt-4">
                        <span className="text-sm font-bold text-[#1A1C1E]">2 Copies • B/W • A4</span>
-                       <span className="text-sm font-black text-primary">500 RWF</span>
+                       <span className="text-sm font-black text-primary">50 RWF</span>
                     </div>
                     <div className="w-full rounded-xl bg-emerald-500 py-3 text-center text-xs font-black uppercase text-white tracking-widest">
                        Paid via MoMo
