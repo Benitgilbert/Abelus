@@ -31,37 +31,37 @@ export default function AdminSettingsPage() {
 
   return (
     <AppShell>
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="space-y-8 animate-fade-in p-4 lg:p-0">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 text-primary mb-2">
+            <div className="flex items-center gap-2 text-indigo-600 mb-2">
               <ShieldCheck className="h-4 w-4" />
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">Administrative Control</span>
             </div>
-            <h1 className="text-4xl font-black font-outfit tracking-tight text-[#1A1C1E]">Site Configuration</h1>
-            <p className="text-muted-foreground mt-2 text-lg font-medium">Manage your brand presence and public information.</p>
+            <h1 className="text-4xl font-black font-outfit tracking-tight text-slate-900">Site Configuration</h1>
+            <p className="text-slate-400 mt-2 text-lg font-bold uppercase tracking-widest text-[10px]">Manage your brand presence and public information.</p>
           </div>
           
-          <div className="flex p-1 bg-muted/30 rounded-2xl border backdrop-blur-sm self-start">
+          <div className="flex p-1.5 bg-slate-100/50 rounded-2xl border border-slate-200/50 backdrop-blur-sm self-start overflow-x-auto scrollbar-hide max-w-full">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all",
+                  "flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
                   activeTab === tab.id 
-                    ? "bg-white text-primary shadow-sm ring-1 ring-black/5" 
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-white text-indigo-600 shadow-xl shadow-indigo-100 ring-1 ring-slate-100" 
+                    : "text-slate-400 hover:text-slate-900 transition-colors"
                 )}
               >
-                <tab.icon className="h-4 w-4" />
+                <tab.icon className="h-3.5 w-3.5" />
                 {tab.name}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mt-8 bg-white border rounded-[3rem] p-10 shadow-sm transition-all animate-in fade-in zoom-in-95 duration-500">
+        <div className="mt-8 bg-white border border-slate-100 rounded-[2.5rem] lg:rounded-[3.5rem] p-6 lg:p-12 shadow-2xl shadow-indigo-100/30 transition-all animate-in fade-in zoom-in-95 duration-500">
           {activeTab === 'general' && <GeneralSettings />}
           {activeTab === 'users' && <UserCreator />}
           {activeTab === 'testimonials' && <TestimonialManager />}

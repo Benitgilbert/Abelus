@@ -263,5 +263,26 @@ export const productService = {
       .eq('id', id);
 
     return !error;
+  },
+
+  async getShortages(threshold: number = 5): Promise<any[] | null> {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select(`
+        *,
+        product:products!inner (
+          name,
+          is_service
+        )
+      `)
+      .eq('product.is_service', false)
+      .lt('stock_quantity', threshold)
+      .order('stock_quantity', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching shortages:', error);
+      return null;
+    }
+    return data;
   }
 };

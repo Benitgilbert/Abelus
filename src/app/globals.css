@@ -100,3 +100,50 @@
   background: rgba(15, 23, 42, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+/* Print Styles */
+@media print {
+  @page {
+    margin: 0mm;
+    size: auto;
+  }
+
+  /* Hide everything by default */
+  body {
+    visibility: hidden;
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Only show the reports and their children */
+  #management-report, 
+  #management-report *,
+  #financial-report,
+  #financial-report *,
+  #shift-report,
+  #shift-report * {
+    visibility: visible;
+  }
+
+  /* Position the report at the very top of the page */
+  #management-report,
+  #financial-report,
+  #shift-report {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    padding: 15mm !important;
+    display: block !important;
+    background: white !important;
+    box-sizing: border-box;
+  }
+
+  /* Ensure background colors and images are printed */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

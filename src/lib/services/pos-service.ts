@@ -19,6 +19,7 @@ export type TransactionData = {
   amountPaid: number;
   paymentMethod: 'cash' | 'momo' | 'credit';
   source: 'pos' | 'online';
+  shiftId: string | null;
 };
 
 export const posService = {
@@ -32,6 +33,7 @@ export const posService = {
         p_payment_method: data.paymentMethod,
         p_payment_status: data.amountPaid >= data.totalAmount ? 'paid' : (data.amountPaid > 0 ? 'partial' : 'pending'),
         p_amount_paid: data.amountPaid,
+        p_shift_id: data.shiftId || null,
         p_items: data.items.map(item => ({
           variant_id: item.variant.id,
           packaging_id: item.unit?.id || null,

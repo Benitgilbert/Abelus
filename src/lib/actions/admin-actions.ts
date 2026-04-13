@@ -14,6 +14,8 @@ export async function adminCreateUser(formData: {
   fullName: string;
   role: UserRole;
   creditLimit?: number;
+  phone?: string;
+  location?: string;
 }) {
   const supabase = await createServerClient();
   
@@ -57,13 +59,15 @@ export async function adminCreateUser(formData: {
   }
 
   // 4. If Market Client, initialize market record
-  if (formData.role === 'client' && formData.creditLimit !== undefined) {
+  if (formData.role === 'client') {
     const { error: marketError } = await supabaseAdmin
       .from('clients_market')
       .insert({
         id: authData.user.id,
         org_name: formData.fullName,
-        credit_limit: formData.creditLimit,
+        phone: formData.phone,
+        location: formData.location,
+        credit_limit: formData.creditLimit || 0,
         debt_balance: 0
       });
 

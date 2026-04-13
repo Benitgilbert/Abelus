@@ -56,18 +56,18 @@ export function BillingWorkspace({ unbilledTx, isSubmitting, onGenerateInvoice, 
   return (
     <div className="space-y-6">
       {/* High-End Ledger Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-slate-950 text-white rounded-2xl p-5 shadow-xl relative border border-slate-800">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-950 text-white rounded-[2rem] p-6 sm:p-5 shadow-xl relative border border-slate-800 gap-6 overflow-hidden shrink-0">
         <Activity className="absolute -left-2 -bottom-2 h-16 w-16 text-white/5 -rotate-12 pointer-events-none" />
         
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-6 w-full sm:w-auto">
            <div className="space-y-0.5">
              <h3 className="text-xl font-black font-outfit tracking-tighter flex items-center gap-2">
                <TrendingUp className="h-5 w-5 text-emerald-400" /> Accounting Ledger
              </h3>
-             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Transparent Chronological Credit Sync</p>
+             <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Transparent Credit Sync</p>
            </div>
            
-           <div className="flex p-1 bg-white/5 rounded-xl border border-white/5">
+           <div className="flex p-1 bg-white/5 rounded-xl border border-white/5 self-start">
               <button 
                 onClick={() => setView('unbilled')}
                 className={cn(
@@ -75,7 +75,7 @@ export function BillingWorkspace({ unbilledTx, isSubmitting, onGenerateInvoice, 
                   view === 'unbilled' ? "bg-white text-slate-950 shadow-lg" : "text-white/40 hover:text-white"
                 )}
               >
-                Live Items ({unbilledTx.length})
+                Live ({unbilledTx.length})
               </button>
               <button 
                 onClick={() => setView('history')}
@@ -84,107 +84,148 @@ export function BillingWorkspace({ unbilledTx, isSubmitting, onGenerateInvoice, 
                   view === 'history' ? "bg-indigo-600 text-white shadow-lg" : "text-white/40 hover:text-white"
                 )}
               >
-                Invoicing History ({invoiceHistory.length})
+                History ({invoiceHistory.length})
               </button>
            </div>
         </div>
 
-        <div className="relative z-10 flex items-center gap-6">
+        <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 w-full sm:w-auto border-t sm:border-t-0 border-white/5 pt-4 sm:pt-0">
            {view === 'unbilled' ? (
              <>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Payload</p>
-                  <p className="text-2xl font-black">
-                     {totalOutstanding.toLocaleString()} <span className="text-[10px] text-slate-400">RWF</span>
-                  </p>
+                <div className="text-left sm:text-right">
+                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Total Payload</p>
+                   <p className="text-xl sm:text-2xl font-black">
+                      {totalOutstanding.toLocaleString()} <span className="text-[10px] text-slate-400">RWF</span>
+                   </p>
                 </div>
                 <button 
                   onClick={onGenerateInvoice} 
                   disabled={isSubmitting || unbilledTx.length === 0}
-                  className="bg-white hover:bg-slate-100 disabled:opacity-50 text-slate-950 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center gap-2"
+                  className="w-full sm:w-auto bg-white hover:bg-slate-100 disabled:opacity-50 text-slate-950 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <>
                       <Zap className="h-4 w-4 animate-pulse text-indigo-600" />
-                      Finalizing...
+                      Syncing...
                     </>
                   ) : (
                     <>
                       <FileText className="h-4 w-4 text-indigo-600" />
-                      Commence Invoicing
+                      Invoicing Cycle
                     </>
                   )}
                 </button>
              </>
            ) : (
-             <div className="text-right">
+             <div className="text-left sm:text-right w-full sm:w-auto">
                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Archived Requests</p>
-               <p className="text-2xl font-black text-indigo-400">{invoiceHistory.length}</p>
+               <p className="text-xl sm:text-2xl font-black text-indigo-400">{invoiceHistory.length}</p>
              </div>
            )}
         </div>
       </div>
 
       {view === 'unbilled' ? (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-w-0">
-          <div className="overflow-x-hidden">
-             <table className="w-full text-left border-collapse table-fixed">
-               <thead>
-                  <tr className="bg-slate-50/50 border-b border-slate-100">
-                     <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-[15%]">Date</th>
-                     <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-[35%]">Product Name</th>
-                     <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center w-[10%]">Qty</th>
-                     <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right w-[15%]">P/U</th>
-                     <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right w-[15%]">Total</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-50">
-                  {flattenedItems.map((item, idx) => (
-                    <tr key={`${item.txId}-${idx}`} className="group hover:bg-slate-50/50 transition-colors">
-                      <td className="py-3 px-4">
-                         <p className="text-[9px] font-black text-slate-900 uppercase">{new Date(item.date).toLocaleDateString()}</p>
-                      </td>
-                      <td className="py-3 px-4">
-                         <p className="text-xs font-black text-slate-900 font-outfit uppercase truncate leading-tight">
-                           {item.product?.name || 'Unknown Product'}
-                         </p>
-                         {item.variant?.attributes && (
-                           <div className="flex gap-1 mt-0.5">
-                             {Object.values(item.variant.attributes).map((v: any, i) => (
-                               <span key={i} className="text-[7px] font-black uppercase px-1 py-0.25 rounded bg-slate-100 text-slate-400">
-                                 {v}
-                               </span>
-                             ))}
-                           </div>
-                         )}
-                      </td>
-                      <td className="py-3 px-4 text-center text-[11px] font-black">
-                         <span className="px-1.5 py-0.5 rounded bg-slate-100">{item.quantity}</span>
-                      </td>
-                      <td className="py-3 px-4 text-right text-[10px] font-bold text-slate-500">
-                         {Number(item.price_at_sale).toLocaleString()}
-                      </td>
-                      <td className="py-3 px-4 text-right text-[10px] font-black text-slate-900 font-outfit">
-                         {item.lineTotal.toLocaleString()}
-                      </td>
+        <div className="space-y-4">
+          {/* Desktop Table */}
+          <div className="hidden sm:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-w-0">
+            <div className="overflow-x-hidden">
+               <table className="w-full text-left border-collapse table-fixed">
+                 <thead>
+                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                       <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-[15%]">Date</th>
+                       <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 w-[35%]">Product Name</th>
+                       <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center w-[10%]">Qty</th>
+                       <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right w-[15%]">P/U</th>
+                       <th className="py-3 px-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right w-[15%]">Total</th>
                     </tr>
-                  ))}
-                  {flattenedItems.length === 0 && (
-                    <tr>
-                       <td colSpan={5} className="py-16 text-center">
-                          <Package className="h-10 w-10 mx-auto mb-3 text-slate-200" />
-                          <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No unbilled sessions detected</p>
-                       </td>
-                    </tr>
-                  )}
-               </tbody>
-             </table>
+                 </thead>
+                 <tbody className="divide-y divide-slate-50">
+                    {flattenedItems.map((item, idx) => (
+                      <tr key={`${item.txId}-${idx}`} className="group hover:bg-slate-50/50 transition-colors">
+                        <td className="py-3 px-4">
+                           <p className="text-[9px] font-black text-slate-900 uppercase">{new Date(item.date).toLocaleDateString()}</p>
+                        </td>
+                        <td className="py-3 px-4">
+                           <p className="text-xs font-black text-slate-900 font-outfit uppercase truncate leading-tight">
+                             {item.product?.name || 'Unknown Product'}
+                           </p>
+                           {item.variant?.attributes && (
+                             <div className="flex gap-1 mt-0.5">
+                               {Object.values(item.variant.attributes).map((v: any, i) => (
+                                 <span key={i} className="text-[7px] font-black uppercase px-1 py-0.25 rounded bg-slate-100 text-slate-400">
+                                   {v}
+                                 </span>
+                               ))}
+                             </div>
+                           )}
+                        </td>
+                        <td className="py-3 px-4 text-center text-[11px] font-black">
+                           <span className="px-1.5 py-0.5 rounded bg-slate-100">{item.quantity}</span>
+                        </td>
+                        <td className="py-3 px-4 text-right text-[10px] font-bold text-slate-500">
+                           {Number(item.price_at_sale).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right text-[10px] font-black text-slate-900 font-outfit">
+                           {item.lineTotal.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                    {flattenedItems.length === 0 && (
+                      <tr>
+                         <td colSpan={5} className="py-16 text-center">
+                            <Package className="h-10 w-10 mx-auto mb-3 text-slate-200" />
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No unbilled sessions detected</p>
+                         </td>
+                      </tr>
+                    )}
+                 </tbody>
+               </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="sm:hidden space-y-3">
+             {flattenedItems.map((item, idx) => (
+               <div key={`${item.txId}-${idx}`} className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm space-y-3 relative overflow-hidden group">
+                  <div className="flex justify-between items-start">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{new Date(item.date).toLocaleDateString()}</p>
+                     <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-50 text-slate-300 uppercase tracking-tighter">#{idx + 1}</span>
+                  </div>
+                  <div>
+                     <h4 className="text-xs font-black text-slate-900 font-outfit uppercase leading-tight mb-1">{item.product?.name || 'Unknown Asset'}</h4>
+                     {item.variant?.attributes && (
+                       <div className="flex flex-wrap gap-1">
+                         {Object.values(item.variant.attributes).map((v: any, i) => (
+                           <span key={i} className="text-[7px] font-black uppercase px-1.5 py-0.25 rounded border border-slate-100 bg-slate-50 text-slate-400">{v}</span>
+                         ))}
+                       </div>
+                     )}
+                  </div>
+                  <div className="flex justify-between items-end pt-3 border-t border-slate-50">
+                     <div className="flex-1">
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Quantity / Rate</p>
+                        <p className="text-xs font-black text-slate-700">{item.quantity} × {Number(item.price_at_sale).toLocaleString()}</p>
+                     </div>
+                     <div className="text-right">
+                        <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">Total Line</p>
+                        <p className="text-sm font-black text-slate-950 font-outfit">{item.lineTotal.toLocaleString()} <span className="text-[8px] opacity-40">rwf</span></p>
+                     </div>
+                  </div>
+               </div>
+             ))}
+             {flattenedItems.length === 0 && (
+                <div className="py-20 text-center bg-white rounded-[2rem] border border-slate-100 border-dashed">
+                  <Package className="h-10 w-10 mx-auto mb-3 text-slate-100" />
+                  <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">No unbilled sessions</p>
+                </div>
+             )}
           </div>
           
-          <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Master Accumulated Aggregate Balance</p>
-             <p className="text-2xl font-black text-slate-950">
-                <span className="text-[10px] text-slate-400 mr-2">RWF</span>
+          <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 rounded-2xl sm:rounded-none">
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Aggregate Accumulated Balance</p>
+             <p className="text-xl sm:text-2xl font-black text-slate-950">
+                <span className="text-[10px] text-slate-400 mr-2 uppercase tracking-widest">rwf</span>
                 {totalOutstanding.toLocaleString()}
              </p>
           </div>

@@ -22,6 +22,7 @@ import { MarketClient, Product, ContractPrice } from '@/types';
 import { clientService } from '@/lib/services/client-service';
 import { productService } from '@/lib/services/product-service';
 import { billingService } from '@/lib/services/billing-service';
+import { adminCreateUser } from '@/lib/actions/admin-actions';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { PaymentRequestPrint } from '@/components/shared/PaymentRequestPrint';
 import { ClientDetailModal } from '@/components/shared/client/ClientDetailModal';
@@ -37,6 +38,9 @@ export default function MarketClientsPage() {
     phone: '',
     location: '',
     credit_limit: 1000000,
+    email: '',
+    password: '',
+    shouldCreateAccount: false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -172,11 +176,51 @@ export default function MarketClientsPage() {
   const handleOnboard = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const data = await clientService.create(newClient);
-    if (data) {
-      setClients([data, ...clients]);
-      setIsModalOpen(false);
-      setNewClient({ org_name: '', phone: '', location: '', credit_limit: 1000000 });
+
+    let createdClientId = '';
+    
+    if (newClient.shouldCreateAccount) {
+      if (!newClient.email || !newClient.password) {
+        alert("Email and Password are required for account creation.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const result = await adminCreateUser({
+        email: newClient.email,
+        password: newClient.password,
+        fullName: newClient.org_name,
+        role: 'client',
+        creditLimit: newClient.credit_limit,
+        phone: newClient.phone,
+        location: newClient.location
+      });
+
+      if (result.error) {
+        alert("Error: " + result.error);
+        setIsSubmitting(false);
+        return;
+      }
+      createdClientId = result.userId!;
+    } else {
+      const data = await clientService.create({
+        org_name: newClient.org_name,
+        phone: newClient.phone,
+        location: newClient.location,
+        credit_limit: newClient.credit_limit
+      });
+      if (data) createdClientId = data.id;
+    }
+
+    if (createdClientId) {
+       // Refresh list to see the new client
+       await fetchClients();
+       setIsModalOpen(false);
+       setNewClient({ 
+         org_name: '', phone: '', location: '', 
+         credit_limit: 1000000, email: '', password: '', 
+         shouldCreateAccount: false 
+       });
     }
     setIsSubmitting(false);
   };
@@ -280,31 +324,74 @@ export default function MarketClientsPage() {
         )}
       </AnimatePresence>
 
-      {/* Onboarding Modal */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="w-full max-w-lg rounded-3xl border bg-white p-8 shadow-2xl">
-              <div className="mb-6 flex items-center justify-between">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 p-0 sm:p-4 backdrop-blur-sm">
+            <motion.div 
+              initial={{ y: "100%", opacity: 0 }} 
+              animate={{ y: 0, opacity: 1 }} 
+              exit={{ y: "100%", opacity: 0 }} 
+              className="w-full h-[90vh] sm:h-auto sm:max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] border bg-white p-6 sm:p-8 shadow-2xl flex flex-col overflow-hidden"
+            >
+              <div className="mb-6 flex items-center justify-between shrink-0">
                 <div>
-                  <h2 className="text-2xl font-bold font-outfit">Onboard New Client Abonné</h2>
-                  <p className="text-sm text-muted-foreground mt-1 text-medium uppercase tracking-tight">Create a new Subscriber contract</p>
+                  <h2 className="text-2xl font-bold font-outfit text-slate-900">Onboard Subscriber</h2>
+                  <p className="text-[10px] text-muted-foreground mt-1 font-black uppercase tracking-widest opacity-60">Create a new Master Contract</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="rounded-full p-2 hover:bg-slate-100"><X className="h-5 w-5" /></button>
+                <button onClick={() => setIsModalOpen(false)} className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all"><X className="h-5 w-5" /></button>
               </div>
-              <form onSubmit={handleOnboard} className="space-y-5">
-                <InputGroup label="Company Name" placeholder="e.g. Kigali Heights Corp" value={newClient.org_name} onChange={(v: string) => setNewClient({...newClient, org_name: v})} />
-                <div className="grid grid-cols-2 gap-4">
-                  <InputGroup label="Phone" placeholder="+250..." value={newClient.phone} onChange={(v: string) => setNewClient({...newClient, phone: v})} />
-                  <InputGroup label="Credit Limit (RWF)" type="number" value={newClient.credit_limit} onChange={(v: string) => setNewClient({...newClient, credit_limit: Number(v)})} />
+
+              <form onSubmit={handleOnboard} className="flex-1 overflow-y-auto space-y-6 pr-1 scrollbar-hide">
+                <InputGroup label="Organization / Corporate Name" placeholder="e.g. Kigali Heights Corp" value={newClient.org_name} onChange={(v: string) => setNewClient({...newClient, org_name: v})} />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <InputGroup label="Priority Contact Line" placeholder="+250..." value={newClient.phone} onChange={(v: string) => setNewClient({...newClient, phone: v})} />
+                  <InputGroup label="Subscriber Credit Limit" type="number" value={newClient.credit_limit} onChange={(v: string) => setNewClient({...newClient, credit_limit: Number(v)})} />
                 </div>
-                <InputGroup label="Location" placeholder="e.g. Gasabo, Kigali" value={newClient.location} onChange={(v: string) => setNewClient({...newClient, location: v})} />
-                <div className="pt-4">
-                  <button type="submit" disabled={isSubmitting} className="w-full rounded-2xl bg-secondary py-4 text-sm font-extrabold text-white shadow-xl hover:bg-secondary/90 disabled:opacity-50">
-                    {isSubmitting ? "Processing..." : "Complete Onboarding"}
-                  </button>
+                
+                <InputGroup label="HQ Operations Location" placeholder="e.g. Gasabo, Kigali" value={newClient.location} onChange={(v: string) => setNewClient({...newClient, location: v})} />
+                
+                {/* Security Section */}
+                <div className="pt-6 border-t border-slate-100">
+                   <div className="flex items-center justify-between py-2">
+                      <div>
+                        <p className="text-sm font-black text-slate-800">Subscriber Portal Access</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tight opacity-60">Allow client to audit their debt</p>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setNewClient({...newClient, shouldCreateAccount: !newClient.shouldCreateAccount})}
+                        className={cn(
+                          "w-12 h-6 rounded-full transition-all relative flex items-center px-1",
+                          newClient.shouldCreateAccount ? "bg-indigo-600" : "bg-slate-200"
+                        )}
+                      >
+                         <div className={cn(
+                           "h-4 w-4 rounded-full bg-white shadow-sm transition-all",
+                           newClient.shouldCreateAccount ? "translate-x-6" : "translate-x-0"
+                         )} />
+                      </button>
+                   </div>
+
+                   {newClient.shouldCreateAccount && (
+                     <div className="space-y-4 pt-6 animate-in slide-in-from-top-2 duration-300">
+                        <InputGroup label="Access Email" placeholder="client@email.com" value={newClient.email} onChange={(v: string) => setNewClient({...newClient, email: v})} />
+                        <InputGroup label="Initial Secure Password" type="password" placeholder="••••••••" value={newClient.password} onChange={(v: string) => setNewClient({...newClient, password: v})} />
+                     </div>
+                   )}
                 </div>
               </form>
+
+              <div className="pt-6 mt-2 border-t border-slate-100 shrink-0">
+                <button 
+                  type="submit" 
+                  onClick={(e) => { e.preventDefault(); handleOnboard(e as any); }}
+                  disabled={isSubmitting} 
+                  className="w-full rounded-2xl bg-slate-900 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-xl hover:bg-indigo-600 transition-all disabled:opacity-50 active:scale-95"
+                >
+                  {isSubmitting ? "Syncing..." : "Activate Subscription"}
+                </button>
+              </div>
             </motion.div>
           </div>
         )}

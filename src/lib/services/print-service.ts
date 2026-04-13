@@ -40,6 +40,33 @@ export const printService = {
     return true;
   },
 
+  async updatePaymentStatus(id: string, payment_status: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('print_orders')
+      .update({ payment_status })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating print order payment status:', error);
+      return false;
+    }
+    return true;
+  },
+
+  async getByTrackingId(trackingId: string): Promise<PrintOrder | null> {
+    const { data, error } = await supabase
+      .from('print_orders')
+      .select('*')
+      .eq('tracking_id', trackingId.toUpperCase())
+      .single();
+
+    if (error) {
+      console.error('Error fetching print order by tracking ID:', error);
+      return null;
+    }
+    return data;
+  },
+
   async createOrder(order: Omit<PrintOrder, 'id' | 'created_at' | 'status' | 'payment_status'>): Promise<PrintOrder | null> {
     const { data, error } = await supabase
       .from('print_orders')

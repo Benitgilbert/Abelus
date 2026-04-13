@@ -234,18 +234,19 @@ export function ContractPriceManager({ products, contractPrices, onPriceUpdate, 
       </div>
 
       <div className="space-y-4">
-        <div className="flex justify-between items-end px-2 border-l-2 border-indigo-600">
+        <div className="flex justify-between items-end px-2 border-l-2 border-indigo-600 shrink-0">
            <div className="space-y-0.5">
-              <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-widest leading-tight">Active Negotiated Terms</h4>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">{activeContracts.length} Registry Entries Active</p>
+              <h4 className="text-[10px] sm:text-[11px] font-black text-slate-900 uppercase tracking-widest leading-tight">Negotiated Sync</h4>
+              <p className="text-[8px] sm:text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">{activeContracts.length} ACTIVE CONTRACTS</p>
            </div>
            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-lg border border-emerald-100">
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Enforced</span>
+              <div className="h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[9px] font-black text-emerald-700 uppercase tracking-widest leading-none">Enforced</span>
            </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-w-0">
+        {/* Desktop View: Table */}
+        <div className="hidden sm:block bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden min-w-0">
            <div className="overflow-x-auto scrollbar-hide">
               <table className="w-full text-left">
                  <thead>
@@ -258,7 +259,7 @@ export function ContractPriceManager({ products, contractPrices, onPriceUpdate, 
                     </tr>
                  </thead>
               <tbody className="divide-y divide-slate-50">
-                 {activeContracts.map((item, idx) => {
+                 {activeContracts.map((item) => {
                     const uniqueId = `${item.cp.product_id}-${item.cp.variant_id}-${item.cp.unit_id || 'base'}`;
                     const isUpdating = reconciling === uniqueId;
                     return (
@@ -280,15 +281,104 @@ export function ContractPriceManager({ products, contractPrices, onPriceUpdate, 
                        <td colSpan={5} className="py-24 text-center">
                           <PackageSearch className="h-16 w-16 mx-auto mb-4 text-slate-100" />
                           <p className="text-[11px] font-black text-slate-300 uppercase tracking-[0.2em] italic">No active pricing contracts detected</p>
-                          <p className="text-[9px] font-bold text-slate-400 mt-2 uppercase tracking-widest italic">Use investigation discovery above to add terms</p>
                        </td>
                     </tr>
                  )}
               </tbody>
-           </table>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile View: High-Density PriceCards */}
+        <div className="sm:hidden space-y-3">
+           {activeContracts.map((item) => {
+              const uniqueId = `${item.cp.product_id}-${item.cp.variant_id}-${item.cp.unit_id || 'base'}`;
+              const isUpdating = reconciling === uniqueId;
+              return (
+                 <PriceCard 
+                   key={item.cp.id}
+                   productName={item.p?.name || ''}
+                   variantAttrs={item.v?.attributes || {}}
+                   unitName={item.unitName}
+                   basePrice={item.basePrice}
+                   contractPrice={item.cp.negotiated_price}
+                   onUpdate={(p: number, sync: boolean) => onPriceUpdate(item.p!.id, item.v?.id, item.u?.id, p, sync)}
+                   onRemove={() => onPriceDelete(item.cp.id)}
+                   loading={isUpdating}
+                 />
+              );
+           })}
+           {activeContracts.length === 0 && (
+             <div className="py-20 text-center bg-white rounded-[2rem] border border-slate-100 shadow-sm border-dashed">
+                <PackageSearch className="h-12 w-12 mx-auto mb-3 text-slate-100" />
+                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic leading-tight px-10">No active pricing contracts detected</p>
+             </div>
+           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PriceCard({ productName, variantAttrs, unitName, basePrice, contractPrice, onUpdate, onRemove, loading }: any) {
+  const [val, setVal] = useState<number>(contractPrice || basePrice || 0);
+  const changed = val !== contractPrice;
+
+  return (
+    <div className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm space-y-4 relative overflow-hidden group">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-slate-950 flex items-center justify-center text-white shadow-lg shrink-0 border border-slate-800">
+            <Box className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-xs font-black text-slate-900 font-outfit uppercase truncate leading-tight mb-1">{productName}</h4>
+            <div className="flex flex-wrap gap-1">
+              <span className="text-[8px] font-black px-1.5 py-0.5 rounded border border-indigo-100 bg-indigo-50 text-indigo-600 uppercase tracking-widest">{unitName}</span>
+              {Object.values(variantAttrs).map((v: any, i: number) => (
+                <span key={i} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded border border-slate-100 bg-slate-50 text-slate-400">{v}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+        <button 
+          onClick={onRemove}
+          className="h-8 w-8 flex items-center justify-center rounded-lg bg-slate-50 text-slate-300 hover:text-red-500 transition-all shrink-0"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-50">
+        <div>
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Standard Base</p>
+          <p className="text-sm font-black text-slate-400 leading-none">{basePrice.toLocaleString()} <span className="text-[8px] opacity-40">rwf</span></p>
+        </div>
+        <div className="text-right">
+          <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1.5">Contract Term</p>
+          <div className="flex items-center justify-end gap-2">
+            <input 
+              type="number" 
+              value={val}
+              onChange={e => setVal(Number(e.target.value))}
+              className={cn(
+                "w-24 bg-slate-50 border rounded-lg px-2 py-1 text-right font-black text-xs outline-none focus:bg-white focus:ring-4 focus:ring-indigo-100",
+                changed ? "border-indigo-600 text-indigo-600" : "border-slate-100 text-slate-900"
+              )}
+            />
           </div>
         </div>
       </div>
+
+      {changed && (
+        <button 
+          disabled={loading}
+          onClick={() => onUpdate(val, true)}
+          className="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 animate-in slide-in-from-top-2"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Check className="h-4 w-4" /> Sync Negotiated Terms</>}
+        </button>
+      )}
     </div>
   );
 }

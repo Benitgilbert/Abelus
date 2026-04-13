@@ -54,58 +54,64 @@ export function TestimonialManager() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-50">
         <div>
-          <h3 className="font-outfit text-xl font-black text-[#1A1C1E]">Client Voices</h3>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-1">Manage public reviews</p>
+          <h3 className="font-outfit text-2xl font-black text-slate-900 tracking-tight">Client Voices</h3>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1.5">Manage High-Fidelity Public Reviews</p>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 rounded-xl bg-[#1A1C1E] px-5 py-2.5 text-xs font-black text-white hover:bg-primary transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          Add Review
-        </button>
+        {!isAdding && (
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="flex items-center justify-center gap-3 rounded-2xl bg-slate-900 px-8 py-4 text-[10px] font-black text-white uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-600 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            Provision Review
+          </button>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
         {/* Add Form Card */}
         {isAdding && (
-          <div className="rounded-[2rem] border-2 border-dashed border-primary/30 p-8 bg-primary/5 space-y-4">
-             <div className="flex items-center gap-3 mb-4">
-               <User className="h-5 w-5 text-primary" />
-               <h4 className="font-black text-sm">New Testimonial</h4>
+          <div className="rounded-[2.5rem] border-2 border-dashed border-indigo-200 p-8 bg-indigo-50/30 space-y-5 flex flex-col justify-center">
+             <div className="flex items-center gap-4 mb-2 text-indigo-600">
+               <div className="h-10 w-10 rounded-xl bg-white shadow-sm flex items-center justify-center border border-indigo-50">
+                 <User className="h-5 w-5" />
+               </div>
+               <h4 className="font-black text-[10px] uppercase tracking-widest">Metadata Entry</h4>
              </div>
-             <input placeholder="Client Name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-xl border bg-white p-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" />
-             <input placeholder="Position/Company" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-xl border bg-white p-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none" />
-             <textarea placeholder="The review text..." value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} rows={3} className="w-full rounded-xl border bg-white p-3 text-sm font-bold focus:ring-2 focus:ring-primary/20 outline-none resize-none" />
-             <div className="flex justify-end gap-3 pt-4">
-               <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-xs font-bold text-muted-foreground">Cancel</button>
-               <button onClick={handleCreate} className="px-5 py-2 rounded-xl bg-primary text-xs font-black text-white">Save Review</button>
+             <div className="space-y-4">
+               <input placeholder="Client Identity" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-2xl border border-white bg-white/80 p-4 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 outline-none transition-all shadow-sm" />
+               <input placeholder="Professional Designation" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-2xl border border-white bg-white/80 p-4 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 outline-none transition-all shadow-sm" />
+               <textarea placeholder="The Review Narrative..." value={formData.content} onChange={e => setFormData({...formData, content: e.target.value})} rows={3} className="w-full rounded-2xl border border-white bg-white/80 p-4 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 outline-none transition-all shadow-sm resize-none" />
+             </div>
+             <div className="flex justify-between items-center pt-4 border-t border-dashed border-indigo-100">
+               <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">Discard</button>
+               <button onClick={handleCreate} className="px-8 py-4 rounded-xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-100 hover:bg-indigo-600 transition-all">Commit Review</button>
              </div>
           </div>
         )}
 
         {testimonials.map((t) => (
-          <div key={t.id} className="group relative rounded-[2rem] border bg-white p-8 shadow-sm transition-all hover:bg-[#FBFBFE] hover:shadow-xl">
-            <Quote className="absolute top-6 right-6 h-8 w-8 text-muted-foreground/10" />
+          <div key={t.id} className="group relative rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm transition-all hover:shadow-2xl hover:shadow-indigo-100/50 hover:-translate-y-1 overflow-hidden">
+            <Quote className="absolute top-6 right-6 h-12 w-12 text-slate-900/05 group-hover:scale-110 transition-transform" />
             
-            <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center gap-1 mb-6">
               {[...Array(5)].map((_, i) => (
-                <Star key={i} className={`h-3 w-3 ${i < t.rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/20'}`} />
+                <Star key={i} className={`h-3 w-3 ${i < t.rating ? 'fill-indigo-600 text-indigo-600 shadow-lg' : 'text-slate-100'}`} />
               ))}
             </div>
 
-            <p className="text-sm font-medium italic text-muted-foreground leading-relaxed mb-6">"{t.content}"</p>
+            <p className="text-sm font-bold text-slate-500 leading-relaxed mb-8 line-clamp-4">"{t.content}"</p>
             
-            <div className="flex items-end justify-between">
-              <div>
-                <h4 className="font-black text-[#1A1C1E]">{t.name}</h4>
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">{t.role}</p>
+            <div className="flex items-end justify-between pt-6 border-t border-slate-50">
+              <div className="min-w-0">
+                <h4 className="font-outfit font-black text-slate-900 tracking-tight truncate">{t.name}</h4>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mt-1 truncate">{t.role}</p>
               </div>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => handleDelete(t.id)} className="p-2 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 transition-all">
+                <button onClick={() => handleDelete(t.id)} className="h-10 w-10 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center hover:bg-rose-50 hover:text-rose-500 transition-all">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
@@ -114,9 +120,11 @@ export function TestimonialManager() {
         ))}
 
         {!isAdding && testimonials.length === 0 && !loading && (
-          <div className="col-span-full py-20 text-center">
-            <Loader2 className="h-10 w-10 animate-spin text-muted-foreground/20 mx-auto" />
-            <p className="mt-4 text-sm font-bold text-muted-foreground uppercase tracking-widest">Initialising testimonials...</p>
+          <div className="col-span-full py-24 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-slate-100 rounded-[2.5rem] bg-slate-50/50">
+             <div className="h-12 w-12 rounded-2xl bg-white shadow-sm flex items-center justify-center border border-slate-50">
+               <Quote className="h-5 w-5 text-slate-300" />
+             </div>
+             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 animate-pulse">Initializing Public Records...</p>
           </div>
         )}
       </div>
