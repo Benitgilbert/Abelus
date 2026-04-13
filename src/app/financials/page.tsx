@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppShell } from '@/components/shared/AppShell';
 import { 
   BarChart3, 
@@ -54,42 +54,47 @@ export default function FinancialsPage() {
   });
   const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
+  const loadData = useCallback(async () => {
+    // We don't want to set global loading to true on every background update
+    // as it would cause layout flickers. We only do it on initial load.
+    try {
+      const [sum, perf, aging, txs, expenses, sh] = await Promise.all([
+        financialService.getSummary(startDate, endDate),
+        financialService.getStaffPerformance(startDate, endDate),
+        financialService.getDebtAging(),
+        supabase
+          .from('transactions')
+          .select(`
+            *,
+            client:clients_market (org_name),
+            operator:profiles (full_name),
+            transaction_items (
+              products (name)
+            )
+          `)
+          .gte('created_at', startDate)
+          .lte('created_at', endDate + 'T23:59:59')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        financialService.getExpenses(startDate, endDate),
+        shiftService.getShiftHistory(20)
+      ]);
+      setSummary(sum);
+      setStaffPerf(perf);
+      setDebtAging(aging);
+      setRecentTransactions(txs.data || []);
+      setRecentExpenses(expenses);
+      setRecentShifts(sh || []);
+    } catch (err) {
+      console.error('Financials Load Error:', err);
+    }
+  }, [startDate, endDate]);
+
   useEffect(() => {
-    const loadData = async () => {
+    const init = async () => {
       setLoading(true);
-      try {
-        const [sum, perf, aging, txs, expenses, sh] = await Promise.all([
-          financialService.getSummary(startDate, endDate),
-          financialService.getStaffPerformance(startDate, endDate),
-          financialService.getDebtAging(),
-          supabase
-            .from('transactions')
-            .select(`
-              *,
-              client:clients_market (org_name),
-              operator:profiles (full_name),
-              transaction_items (
-                products (name)
-              )
-            `)
-            .gte('created_at', startDate)
-            .lte('created_at', endDate + 'T23:59:59')
-            .order('created_at', { ascending: false })
-            .limit(100),
-          financialService.getExpenses(startDate, endDate),
-          shiftService.getShiftHistory(20)
-        ]);
-        setSummary(sum);
-        setStaffPerf(perf);
-        setDebtAging(aging);
-        setRecentTransactions(txs.data || []);
-        setRecentExpenses(expenses);
-        setRecentShifts(sh || []);
-      } catch (err) {
-        console.error('Financials Load Error:', err);
-      } finally {
-        setLoading(false);
-      }
+      await loadData();
+      setLoading(false);
     };
 
     // Admin-Only Security Gate
@@ -99,9 +104,25 @@ export default function FinancialsPage() {
     }
 
     if (profile) {
-      loadData();
+      init();
     }
-  }, [startDate, endDate, profile, router]);
+  }, [profile?.id, router, loadData]);
+
+  // Realtime Sync for Financials
+  useEffect(() => {
+    if (!profile || profile.role !== 'admin') return;
+
+    const channel = supabase
+      .channel('financials-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients_market' }, () => loadData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, loadData]);
 
   useEffect(() => {
     const main = document.querySelector('main');

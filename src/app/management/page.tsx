@@ -80,7 +80,7 @@ export default function Dashboard() {
     if (profile) {
       loadDashboardData();
     }
-  }, [profile, router]);
+  }, [profile?.id, router]);
 
   const handleDownload = () => {
     window.print();

@@ -71,6 +71,16 @@ export default function AdminPrintOrdersPage() {
   // 2. Fetch Orders on Mount
   useEffect(() => {
     fetchOrders();
+
+    // Enable Realtime Synchronization for Print Queue
+    const channel = supabase
+      .channel('print-orders-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'print_orders' }, () => fetchOrders())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchOrders = async () => {

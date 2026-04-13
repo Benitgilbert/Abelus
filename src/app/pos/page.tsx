@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppShell } from '@/components/shared/AppShell';
 import { 
   Search, 
@@ -25,6 +25,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Product, ProductVariant, ProductPackaging, MarketClient, ContractPrice } from '@/types';
 import { productService } from '@/lib/services/product-service';
@@ -89,18 +90,8 @@ export default function POSPage() {
   const [foundPrintOrder, setFoundPrintOrder] = useState<any>(null);
   const [printSearchError, setPrintSearchError] = useState<string | null>(null);
 
-  useEffect(() => {
-    initPOS();
-  }, []);
-
-  useEffect(() => {
-    if (selectedMarket) {
-      fetchContractPrices(selectedMarket.id);
-    }
-  }, [selectedMarket]);
-
-  const initPOS = async () => {
-    setLoading(true);
+  const initPOS = useCallback(async () => {
+    // Background sync doesn't set global loading to avoid flickers
     const [pData, mData] = await Promise.all([
       productService.getAll(),
       clientService.getAll()
@@ -109,16 +100,35 @@ export default function POSPage() {
     if (mData) setMarkets(mData);
 
     // Check for active shift
-    if (user) {
+    if (user?.id) {
       const shift = await shiftService.getCurrentShift(user.id);
       setCurrentShift(shift);
       if (!shift) {
         setIsShiftModalOpen(true);
       }
     }
+  }, [user?.id]);
 
-    setLoading(false);
-  };
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await initPOS();
+      setLoading(false);
+    };
+    init();
+
+    // Enable Realtime Synchronization for Operations
+    const channel = supabase
+      .channel('pos-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => initPOS())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_variants' }, () => initPOS())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => initPOS())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [initPOS]);
 
   const fetchContractPrices = async (clientId: string) => {
     const data = await productService.getContractPrices(clientId);

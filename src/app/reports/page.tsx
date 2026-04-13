@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import { AppShell } from '@/components/shared/AppShell';
 import { 
   FileText, 
@@ -24,21 +25,39 @@ export default function StaffReportsPage() {
   const [showCountModal, setShowCountModal] = useState(false);
   const [actualCashInput, setActualCashInput] = useState('');
 
-  useEffect(() => {
-    async function loadData() {
-      if (!user) return;
-      setLoading(true);
-      try {
-        const result = await shiftService.getTodaySummary(user.id);
-        setData(result);
-      } catch (err) {
-        console.error('Failed to load staff reports:', err);
-      } finally {
-        setLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    if (!user) return;
+    try {
+      const result = await shiftService.getTodaySummary(user.id);
+      setData(result);
+    } catch (err) {
+      console.error('Failed to load staff reports:', err);
     }
-    loadData();
   }, [user]);
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      await loadData();
+      setLoading(false);
+    };
+    init();
+  }, [loadData]);
+
+  // Realtime Sync for Staff Analytics
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('staff-reports-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, () => loadData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => loadData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, loadData]);
 
   const handlePrint = () => {
     if (data?.currentShift) {

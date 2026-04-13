@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/client';
 import { AppShell } from '@/components/shared/AppShell';
 import { 
   Package, 
@@ -74,20 +75,37 @@ export default function InventoryPage() {
   // Generator State
   const [generatorRows, setGeneratorRows] = useState<{key: string, values: string}[]>([{key: '', values: ''}]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = useCallback(async () => {
+    // Note: We don't set loading state here for realtime updates
+    // to avoid layout shifts. Initial loading is handled in init()
     const [prodData, catData] = await Promise.all([
       productService.getAll(),
       categoryService.getAll()
     ]);
     if (prodData) setProducts(prodData);
     if (catData) setCategories(catData);
-    setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    const init = async () => {
+      setLoading(true);
+      await fetchData();
+      setLoading(false);
+    };
+    init();
+
+    // Enable Realtime Synchronization
+    const channel = supabase
+      .channel('inventory-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_variants' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'product_packaging' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
 
   // Professional SKU Generation Logic (sku-1001)
   const generateSmartSKU = (indexOffset = 0) => {
