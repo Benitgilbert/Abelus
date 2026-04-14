@@ -5,24 +5,11 @@ import { supabase } from '@/lib/supabase/client';
 import { sendNewsletterAction } from '@/lib/actions/marketing';
 import { AppShell } from '@/components/shared/AppShell';
 import { 
-  Mail, 
-  Users, 
-  Send, 
-  History, 
-  Search, 
-  Filter, 
-  MoreVertical, 
-  Trash2, 
-  Eye, 
-  ChevronRight,
-  Plus,
-  Rocket,
-  ArrowRight,
-  Loader2,
-  Layout,
-  Smartphone,
-  Monitor,
-  Printer
+  Mail, Users, Send, History, Search, Filter, 
+  MoreVertical, Trash2, Eye, ChevronRight, Plus, 
+  Rocket, ArrowRight, Loader2, Layout, Smartphone, 
+  Monitor, Printer, Smartphone as SmartphoneIcon, Layout as LayoutIcon, 
+  Printer as PrinterIcon, Rocket as RocketIcon, Users as UsersIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';

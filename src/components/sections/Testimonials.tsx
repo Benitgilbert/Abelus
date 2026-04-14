@@ -26,9 +26,9 @@ export function Testimonials() {
   }, []);
 
   return (
-    <section className="py-16 bg-black overflow-hidden">
+    <section className="py-12 bg-black overflow-hidden">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex flex-col items-center text-center mb-12">
+        <div className="flex flex-col items-center text-center mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -38,7 +38,7 @@ export function Testimonials() {
             <div className="inline-flex items-center gap-2 text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-2">
               <Sparkles className="h-4 w-4" /> Trusted Voices
             </div>
-            <h2 className="font-outfit text-4xl md:text-6xl font-black tracking-tight text-white uppercase italic text-center">
+            <h2 className="font-outfit text-4xl md:text-5xl font-black tracking-tight text-white uppercase italic text-center">
               Client <span className="text-primary not-italic">Validation.</span>
             </h2>
             <div className="mx-auto h-1 w-20 bg-primary/40 rounded-full" />
@@ -59,9 +59,9 @@ export function Testimonials() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1, type: "spring", stiffness: 260, damping: 20 }}
                 whileHover={{ scale: 1.02, y: -5 }}
-                className="relative rounded-[3rem] bg-[#09090b] border border-white/5 p-12 transition-all group hover:border-primary/20"
+                className="relative rounded-[3rem] bg-[#09090b] border border-white/5 p-8 transition-all group hover:border-primary/20"
               >
-                <Quote className="absolute top-12 right-12 h-10 w-10 text-primary/10 group-hover:text-primary transition-colors" />
+                <Quote className="absolute top-8 right-8 h-8 w-8 text-primary/10 group-hover:text-primary transition-colors" />
                 
                 <div className="flex gap-1 mb-8">
                   {[...Array(r.rating)].map((_, j) => (
@@ -69,7 +69,7 @@ export function Testimonials() {
                   ))}
                 </div>
 
-                <p className="text-xl font-medium leading-relaxed text-slate-300 mb-10 italic">
+                <p className="text-lg font-medium leading-relaxed text-slate-300 mb-8 italic">
                   "{r.content}"
                 </p>
 
@@ -87,7 +87,7 @@ export function Testimonials() {
           </div>
         )}
 
-        <div className="mt-20 flex justify-center opacity-30">
+        <div className="mt-12 flex justify-center opacity-30">
           <div className="h-px w-full max-w-lg bg-gradient-to-r from-transparent via-slate-500 to-transparent" />
         </div>
       </div>

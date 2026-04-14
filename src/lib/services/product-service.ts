@@ -1,42 +1,46 @@
 import { supabase } from '@/lib/supabase/client';
 import { Product, ProductVariant, ProductPackaging, ContractPrice } from '@/types';
+import { safeQuery, retryOperation } from '@/lib/utils/network-utils';
 
 export const productService = {
   async getAll(options?: { 
     categoryId?: string, 
     sortBy?: 'newest' | 'price_asc' | 'price_desc',
     hideBelowShortage?: boolean,
-    search?: string
+    search?: string,
+    isFeatured?: boolean
   }): Promise<Product[] | null> {
     
-    // Fetch products with variants and packaging nested
-    let query = supabase
-      .from('products')
-      .select(`
-        *,
-        variants:product_variants (
+    // Fetch products with variants and packaging nested using safeQuery for resilience
+    const data = await safeQuery<any[]>(async () => {
+      const query = supabase
+        .from('products')
+        .select(`
           *,
-          packaging:product_packaging (*)
-        )
-      `);
+          variants:product_variants (
+            *,
+            packaging:product_packaging (*)
+          )
+        `);
 
-    if (options?.categoryId) {
-      query = query.eq('category_id', options.categoryId);
-    }
+      if (options?.categoryId) {
+        query.eq('category_id', options.categoryId);
+      }
 
-    if (options?.search) {
-      query = query.or(`name.ilike.%${options.search}%,description.ilike.%${options.search}%`);
-    }
+      if (options?.search) {
+        query.or(`name.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+      }
 
-    const { data, error } = await query;
+      if (options?.isFeatured !== undefined) {
+        query.eq('is_featured', options.isFeatured);
+      }
 
-    if (error) {
-      console.error('Error fetching products:', error);
-      return null;
-    }
+      return await query;
+    }, []);
+
+    if (!data || data.length === 0) return [];
 
     // Post-processing to ensure backward compatibility with older UI components
-    // We map the default variant properties to the top level for simple displays
     const results = (data as any[]).map(product => {
       const defaultVariant = product.variants?.find((v: any) => v.is_default) || product.variants?.[0];
       return {
@@ -54,22 +58,21 @@ export const productService = {
   },
 
   async getById(id: string): Promise<Product | null> {
-    const { data, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        variants:product_variants (
+    const data = await safeQuery<any>(async () => {
+      return await supabase
+        .from('products')
+        .select(`
           *,
-          packaging:product_packaging (*)
-        )
-      `)
-      .eq('id', id)
-      .single();
+          variants:product_variants (
+            *,
+            packaging:product_packaging (*)
+          )
+        `)
+        .eq('id', id)
+        .single();
+    });
 
-    if (error) {
-      console.error('Error fetching product:', error);
-      return null;
-    }
+    if (!data) return null;
 
     const defaultVariant = data.variants?.find((v: any) => v.is_default) || data.variants?.[0];
     return {
@@ -105,6 +108,7 @@ export const productService = {
       .insert({
         ...parentInfo,
         category_id: category_id === '' ? null : category_id,
+        is_featured: productData.is_featured || false,
         created_at: new Date().toISOString()
       })
       .select()
@@ -161,6 +165,7 @@ export const productService = {
       stock_quantity, 
       sku, 
       packaging,
+      is_featured,
       created_at,
       updated_at,
       ...parentUpdates 
@@ -169,7 +174,10 @@ export const productService = {
     // 2. Update the parent product record
     const { error: pError } = await supabase
       .from('products')
-      .update(parentUpdates)
+      .update({
+        ...parentUpdates,
+        is_featured
+      })
       .eq('id', id);
 
     if (pError) {

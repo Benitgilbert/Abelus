@@ -32,9 +32,9 @@ export function CategoryGrid() {
   if (loading) return null;
 
   return (
-    <section className="py-16 bg-black overflow-hidden">
+    <section className="py-12 bg-black overflow-hidden">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex flex-col items-center text-center mb-12">
+        <div className="flex flex-col items-center text-center mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -52,38 +52,39 @@ export function CategoryGrid() {
           {specialties.map((cat, i) => {
             const IconComponent = (Icons as any)[cat.icon_name || 'Box'] || Icons.Box;
             return (
-              <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                whileHover={{ scale: 1.02, y: -5 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative h-[320px] cursor-pointer"
-              >
-                <div className="absolute inset-0 bg-[#09090b] border border-white/5 rounded-[3rem] transition-all group-hover:border-primary/30 group-hover:shadow-[0_0_40px_-15px_rgba(16,185,129,0.3)]" />
-                
-                <div className="relative h-full p-10 flex flex-col justify-between items-start">
-                  <div 
-                    className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5 transition-all group-hover:bg-primary group-hover:text-white"
-                    style={{ color: cat.color_code || '#10b981' }}
-                  >
-                    <IconComponent className="h-8 w-8 stroke-[1.5] group-hover:text-white" />
-                  </div>
+              <Link key={cat.id} href={cat.link_url || '/shop'} className="block group">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="group relative h-[220px] cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-[#09090b] border border-white/5 rounded-[2.5rem] transition-all group-hover:border-primary/30 group-hover:shadow-[0_0_40px_-15px_rgba(16,185,129,0.3)]" />
                   
-                  <div className="space-y-3">
-                    <h3 className="font-outfit text-2xl font-black text-white uppercase leading-none">{cat.title}</h3>
-                    <p className="text-sm font-medium text-slate-500 leading-relaxed max-w-[200px]">
-                      {cat.description || "Elite solutions tailored for your digital requirements."}
-                    </p>
-                  </div>
+                  <div className="relative h-full p-6 flex flex-col justify-between items-start">
+                    <div 
+                      className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 transition-all group-hover:bg-primary group-hover:text-white"
+                      style={{ color: cat.color_code || '#10b981' }}
+                    >
+                      <IconComponent className="h-6 w-6 stroke-[1.5] group-hover:text-white" />
+                    </div>
+                    
+                    <div className="space-y-1.5 flex-1 mt-4">
+                      <h3 className="font-outfit text-lg font-black text-white uppercase leading-none">{cat.title}</h3>
+                      <p className="text-[10px] font-medium text-slate-500 leading-tight max-w-[180px] line-clamp-2">
+                        {cat.description || "Elite solutions tailored for your requirements."}
+                      </p>
+                    </div>
 
-                  <div className="absolute bottom-10 right-10 h-10 w-10 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:bg-primary group-hover:text-white transition-all">
-                    <Icons.ArrowUpRight className="h-5 w-5" />
+                    <div className="absolute bottom-6 right-6 h-8 w-8 rounded-full bg-white/5 flex items-center justify-center text-white/20 group-hover:bg-primary group-hover:text-white transition-all">
+                      <Icons.ArrowUpRight className="h-4 w-4" />
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+              </Link>
             );
           })}
         </div>

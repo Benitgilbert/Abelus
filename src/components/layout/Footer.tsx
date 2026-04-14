@@ -22,7 +22,14 @@ export function Footer() {
               Your community hub for digital services, premium stationery, and state-of-the-art office technology. Providing quality you can trust.
             </p>
             <div className="flex items-center gap-4">
-              <a href="#" className="rounded-xl border p-2.5 text-muted-foreground hover:bg-primary hover:text-white transition-all"><Globe className="h-5 w-5" /></a>
+              <a 
+                href={getSetting('social_link', 'https://facebook.com/pastorbonus.gicumbi')} 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl border p-2.5 text-muted-foreground hover:bg-primary hover:text-white transition-all"
+              >
+                <Globe className="h-5 w-5" />
+              </a>
             </div>
           </div>
 
@@ -32,7 +39,7 @@ export function Footer() {
             <ul className="space-y-4">
               <li><Link href="/shop" className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Digital Shop</Link></li>
               <li><Link href="/print-portal" className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Print Portal</Link></li>
-              <li><Link href="/market" className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">B2B Market</Link></li>
+              <li><Link href="/?inquiry=true" className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">B2B Market</Link></li>
               <li><Link href="/warranty" className="text-sm font-semibold text-muted-foreground hover:text-primary transition-colors">Warranty Info</Link></li>
             </ul>
           </div>

@@ -34,19 +34,19 @@ export function Newsletter() {
   };
 
   return (
-    <section className="py-16 bg-black overflow-hidden">
+    <section className="py-12 bg-black overflow-hidden">
       <div className="mx-auto max-w-7xl px-6">
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative rounded-[3.5rem] bg-[#09090b] border border-white/5 p-12 md:p-24 text-white overflow-hidden shadow-2xl"
+          className="relative rounded-[3rem] bg-[#09090b] border border-white/5 p-10 md:p-14 text-white overflow-hidden shadow-2xl"
         >
           <div className="relative z-10 flex flex-col items-center text-center max-w-2xl mx-auto">
             <motion.div 
               whileHover={{ rotate: 12, scale: 1.1 }}
               transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10 border border-primary/20 mb-10"
+              className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-primary/10 border border-primary/20 mb-8"
             >
               <AnimatePresence mode="wait">
                 {status === 'success' ? (
@@ -56,22 +56,22 @@ export function Newsletter() {
                     animate={{ scale: 1 }}
                     className="text-primary"
                   >
-                    <CheckCircle2 className="h-10 w-10" />
+                    <CheckCircle2 className="h-8 w-8" />
                   </motion.div>
                 ) : (
                   <motion.div key="idle">
-                    <Mail className="h-10 w-10 text-primary" />
+                    <Mail className="h-8 w-8 text-primary" />
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
             
-            <h2 className="font-outfit text-5xl md:text-7xl font-black tracking-tight leading-none uppercase italic">
+            <h2 className="font-outfit text-4xl md:text-5xl font-black tracking-tight leading-none uppercase italic">
               {status === 'success' ? "Welcome to the " : "Join the "} 
               <span className="text-primary not-italic">Circle.</span>
             </h2>
             
-            <p className="mt-8 text-xl font-medium text-slate-400 leading-relaxed max-w-lg">
+            <p className="mt-6 text-lg font-medium text-slate-400 leading-relaxed max-w-lg">
               {status === 'success' 
                 ? "You've successfully entered our high-fidelity digital hub. Expect excellence in your inbox."
                 : "Experience the selective curation of tech and printing. No noise, just elite updates and boutique savings."}
@@ -84,7 +84,7 @@ export function Newsletter() {
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   onSubmit={handleSubmit} 
-                  className="mt-14 w-full flex flex-col sm:flex-row gap-4"
+                  className="mt-10 w-full flex flex-col sm:flex-row gap-4"
                 >
                   <input 
                     type="email" 
@@ -93,21 +93,21 @@ export function Newsletter() {
                     placeholder="Identify your email" 
                     required
                     disabled={status === 'loading'}
-                    className="flex-1 rounded-pill bg-white/5 border border-white/10 px-8 py-6 text-lg font-medium placeholder:text-slate-600 focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50"
+                    className="flex-1 rounded-pill bg-white/5 border border-white/10 px-8 py-4 text-base font-medium placeholder:text-slate-600 focus:outline-none focus:border-primary/50 transition-all disabled:opacity-50"
                   />
                   <motion.button 
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     type="submit"
                     disabled={status === 'loading'}
-                    className="group flex items-center justify-center gap-4 rounded-pill bg-primary px-12 py-6 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-primary/20 transition-all disabled:opacity-50"
+                    className="group flex items-center justify-center gap-4 rounded-pill bg-primary px-8 py-4 text-xs font-black uppercase tracking-widest text-white shadow-2xl shadow-primary/20 transition-all disabled:opacity-50"
                   >
                     {status === 'loading' ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
                     ) : (
                       <>
                         Enroll
-                        <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
                   </motion.button>
@@ -125,7 +125,7 @@ export function Newsletter() {
               </motion.p>
             )}
             
-            <div className="mt-10 flex items-center gap-4 text-slate-600">
+            <div className="mt-8 flex items-center gap-4 text-slate-600">
               <div className="h-1 w-12 bg-white/5 rounded-full" />
               <span className="text-[10px] font-black uppercase tracking-[0.4em]">Proprietary & Protected</span>
               <div className="h-1 w-12 bg-white/5 rounded-full" />

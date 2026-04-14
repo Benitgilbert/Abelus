@@ -14,8 +14,8 @@ export function ProductShowcase() {
 
   useEffect(() => {
     async function load() {
-      const data = await productService.getAll();
-      if (data) setProducts(data.slice(0, 8)); // Top 8
+      const data = await productService.getAll({ isFeatured: true });
+      if (data) setProducts(data.slice(0, 8)); // Show up to 8 of the hand-picked elite items
       setLoading(false);
     }
     load();
@@ -28,14 +28,14 @@ export function ProductShowcase() {
   );
 
   return (
-    <section className="py-16 bg-black">
+    <section className="py-12 bg-black">
       <div className="mx-auto max-w-7xl px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
           <div>
             <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.3em] text-[10px] mb-4">
               <Sparkles className="h-4 w-4" /> Selective Curation
             </div>
-            <h2 className="font-outfit text-4xl md:text-6xl font-black tracking-tight text-white uppercase italic">
+            <h2 className="font-outfit text-4xl md:text-5xl font-black tracking-tight text-white uppercase italic">
               Elite <span className="text-primary not-italic">Inventory.</span>
             </h2>
           </div>
@@ -59,7 +59,7 @@ export function ProductShowcase() {
               >
                 <Link 
                   href={`/shop/${product.id}`}
-                  className="group relative flex flex-col rounded-[2.5rem] border border-white/5 bg-[#09090b] p-5 transition-all hover:border-primary/30 hover:shadow-[0_0_40px_-20px_rgba(16,185,129,0.3)]"
+                  className="group relative flex flex-col rounded-[2.5rem] border border-white/5 bg-[#09090b] p-4 transition-all hover:border-primary/30 hover:shadow-[0_0_40px_-20px_rgba(16,185,129,0.3)]"
                 >
                   <div className="relative aspect-square mb-6 overflow-hidden rounded-[2rem] bg-black group-hover:bg-primary/5 transition-colors flex items-center justify-center">
                     {product.image_url ? (
@@ -68,7 +68,7 @@ export function ProductShowcase() {
                         transition={{ type: "spring", stiffness: 300, damping: 15 }}
                         src={product.image_url} 
                         alt={product.name} 
-                        className="h-full w-full object-cover grayscale opacity-80 group-hover:opacity-100 group-hover:grayscale-0 transition-all duration-700" 
+                        className="h-full w-full object-cover transition-all duration-700" 
                       />
                     ) : (
                       <ShoppingCart className="h-12 w-12 text-slate-800 opacity-20" />

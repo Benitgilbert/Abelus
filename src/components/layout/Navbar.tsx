@@ -79,7 +79,7 @@ export function Navbar() {
               )} />
               <input 
                 type="text" 
-                placeholder="Search products, calculators, or services..."
+                placeholder="Search products or digital services..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}

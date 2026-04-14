@@ -23,6 +23,7 @@ export interface Product {
   image_url?: string;
   has_variants: boolean;
   is_service: boolean;
+  is_featured: boolean;
   created_at: string;
   // Compatibility fields (mapped from default variant)
   stock_quantity?: number;

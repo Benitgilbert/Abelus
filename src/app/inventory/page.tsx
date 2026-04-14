@@ -26,7 +26,8 @@ import {
   Zap,
   LayoutGrid,
   RefreshCw,
-  MoreHorizontal
+  MoreHorizontal,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Product, ProductVariant, Category, ProductPackaging } from '@/types';
@@ -65,7 +66,8 @@ export default function InventoryPage() {
     selling_price: 0,
     buying_price: 0,
     stock_quantity: 0,
-    sku: ''
+    sku: '',
+    is_featured: false
   });
 
   // Variations State
@@ -128,7 +130,8 @@ export default function InventoryPage() {
       stock_quantity: p.stock_quantity || 0,
       image_url: p.image_url || '',
       is_service: p.is_service || false,
-      has_variants: p.has_variants || false
+      has_variants: p.has_variants || false,
+      is_featured: p.is_featured || false
     });
     if (p.variants) {
       setVariants(p.variants.map((v: any) => ({ ...v, tempId: Math.random().toString() })));
@@ -196,7 +199,7 @@ export default function InventoryPage() {
         name: '', description: '', category_id: categories.length > 0 ? categories[0].id : '',
         is_service: false,
         image_url: '', has_variants: false, selling_price: 0, buying_price: 0,
-        stock_quantity: 0, sku: ''
+        stock_quantity: 0, sku: '', is_featured: false
     });
     setVariants([]);
     setCustomUnits([]);
@@ -389,10 +392,19 @@ export default function InventoryPage() {
                             </div>
 
                             <div className="space-y-3">
+                              <label className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-white hover:border-amber-300 transition-all group">
+                                <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-amber-500 focus:ring-amber-50" checked={productForm.is_featured} onChange={() => setProductForm({...productForm, is_featured: !productForm.is_featured})} />
+                                <div className="flex-1">
+                                  <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-tight">Mark as Featured [ACTIVE]</span>
+                                  <span className="block text-[9px] text-slate-500 font-medium leading-tight">Hand-pick this item for the Landing Page spotlight.</span>
+                                </div>
+                                <Star className={cn("h-4 w-4 transition-colors shrink-0", productForm.is_featured ? "text-amber-500 fill-amber-500" : "text-slate-300")} />
+                              </label>
+
                               <label className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-white hover:border-indigo-300 transition-all group">
                                 <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-50" checked={productForm.is_service} onChange={() => setProductForm({...productForm, is_service: !productForm.is_service})} />
                                 <div className="flex-1">
-                                  <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-tight">Register as Service</span>
+                                  <span className="block text-[11px] font-bold text-slate-800 uppercase tracking-tight">Register as Service [ACTIVE]</span>
                                   <span className="block text-[9px] text-slate-500 font-medium leading-tight">Use for labor/services. Disables stock tracking.</span>
                                 </div>
                                 <Package className={cn("h-4 w-4 transition-colors shrink-0", productForm.is_service ? "text-emerald-600" : "text-slate-300")} />
