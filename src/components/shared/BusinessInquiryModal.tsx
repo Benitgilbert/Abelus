@@ -25,8 +25,13 @@ export function BusinessInquiryModal({ isOpen, onClose, shopPhone }: BusinessInq
     // Construct the professional message
     const message = `*Abelus Business Inquiry*\n\n*Name*: ${name}\n*Inquiry*: ${inquiry}\n\n_Sent via Abelus Business Portal_`;
     
-    // Clean the phone number (remove any non-numeric characters)
-    const cleanPhone = shopPhone.replace(/[^0-9]/g, '');
+    // Clean the phone number and ensure international format (Rwanda: 250)
+    let cleanPhone = shopPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '250' + cleanPhone.substring(1);
+    } else if (!cleanPhone.startsWith('250')) {
+      cleanPhone = '250' + cleanPhone;
+    }
     
     // Generate WhatsApp URL
     const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
@@ -40,7 +45,12 @@ export function BusinessInquiryModal({ isOpen, onClose, shopPhone }: BusinessInq
 
   const whatsappUrl = (() => {
     const message = `*Abelus Business Inquiry*\n\n*Name*: ${name || 'N/A'}\n*Inquiry*: ${inquiry || 'N/A'}\n\n_Sent via Abelus Business Portal_`;
-    const cleanPhone = shopPhone.replace(/[^0-9]/g, '');
+    let cleanPhone = shopPhone.replace(/[^0-9]/g, '');
+    if (cleanPhone.startsWith('0')) {
+      cleanPhone = '250' + cleanPhone.substring(1);
+    } else if (!cleanPhone.startsWith('250')) {
+      cleanPhone = '250' + cleanPhone;
+    }
     return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
   })();
 
