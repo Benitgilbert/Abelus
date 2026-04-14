@@ -13,7 +13,8 @@ import {
   ChevronRight,
   ShieldCheck,
   CreditCard,
-  FileText
+  FileText,
+  Mail
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +28,7 @@ const navigation = [
   { name: 'Inventory', href: '/inventory', icon: Package },
   { name: 'Client Abonné', href: '/market', icon: Users },
   { name: 'Print Center', href: '/admin/print-orders', icon: Printer },
+  { name: 'Marketing Reach', href: '/admin/subscribers', icon: Mail },
   { name: 'Financials', href: '/financials', icon: CreditCard },
   { name: 'Daily Report', href: '/reports', icon: FileText },
   { name: 'Admin Control', href: '/admin/settings', icon: ShieldCheck },

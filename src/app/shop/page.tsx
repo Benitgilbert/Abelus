@@ -49,8 +49,12 @@ function ShopContent() {
   };
 
   useEffect(() => {
+    const catParam = searchParams.get('category');
+    if (catParam && activeCategoryId === "all") {
+      setActiveCategoryId(catParam);
+    }
     loadData();
-  }, [activeCategoryId, sortBy, q]);
+  }, [activeCategoryId, sortBy, q, searchParams]);
 
   const handleAddToCart = (product: Product) => {
     const variant = product.variants?.[0]; // Default variant
